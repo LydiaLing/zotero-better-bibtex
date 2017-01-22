@@ -13,6 +13,7 @@ require 'mechanize'
 require 'open-uri'
 require 'net/http'
 require 'uri'
+require 'neatjson'
 
 #$DEBUG=true
 
@@ -177,7 +178,7 @@ After do |scenario|
     open("#{filename}.cache", 'w'){|f| f.write(JSON.pretty_generate($Firefox.BetterBibTeX.cacheState)) } if scenario.failed? || scenario.source_tag_names.include?('@dumpcache')
     open("#{filename}.serialized", 'w'){|f| f.write(JSON.pretty_generate($Firefox.BetterBibTeX.serializedState)) } if scenario.failed? || scenario.source_tag_names.include?('@dumpserialized')
 
-    $Firefox.BetterBibTeX.exportToFile('BetterBibTeX JSON', "#{filename}.json") if scenario.source_tag_names.include?('@dumplibrary')
+    $Firefox.BetterBibTeX.exportToFile('BetterBibTeX JSON', {}, "#{filename}.json") if scenario.source_tag_names.include?('@dumplibrary')
   end
 end
 
@@ -272,22 +273,7 @@ When /^I import (.+) from '(.+?)'(?:(?: as )'(.+)')?$/ do |items, filename, alia
 end
 
 Then /^write the library to '(.+)'$/ do |filename|
-  $Firefox.BetterBibTeX.exportToFile('BetterBibTeX JSON', filename)
-end
-
-def normalize(o)
-  if o.is_a?(Hash)
-    arr= []
-    o.each_pair{|k,v|
-      arr << {k => normalize(v)}
-    }
-    arr.sort!{|a, b| "#{a.keys[0]}~#{a.values[0]}" <=> "#{b.keys[0]}~#{b.values[0]}" }
-    return arr
-  elsif o.is_a?(Array)
-    return o.collect{|v| normalize(v)}.sort{|a,b| a.to_s <=> b.to_s}
-  else
-    return o
-  end
+  $Firefox.BetterBibTeX.exportToFile('BetterBibTeX JSON', {}, filename)
 end
 
 def testfile(filename)
@@ -299,50 +285,94 @@ def testfile(filename)
   return f
 end
 
+def normalize_library(library, nocollections)
+  library.delete('keymanager')
+  library.delete('cache')
+  library.delete('config')
+  library.delete('id')
+
+  fields = %w{
+    DOI ISBN ISSN abstractNote applicationNumber archive archiveLocation assignee
+    bookTitle callNumber caseName code conferenceName country court creators
+    date dateDecided dateEnacted distributor docketNumber edition encyclopediaTitle episodeNumber
+    extra filingDate firstPage institution issue issueDate issuingAuthority itemID
+    itemType journalAbbreviation jurisdiction key language legalStatus libraryCatalog manuscriptType
+    medium multi nameOfAct network note notes numPages number
+    numberOfVolumes pages patentNumber place priorityNumbers proceedingsTitle programTitle publicLawNumber
+    publicationTitle publisher references related relations reportNumber reportType reporter
+    reporterVolume rights runningTime section seeAlso series seriesNumber seriesText
+    seriesTitle shortTitle status studio tags thesisType title type
+    university url videoRecordingFormat volume websiteTitle websiteType
+  }
+  # item order doesn't matter, but for my tests I need them to be stable
+  library['items'].sort_by!{|item| fields.collect{|field| item[field].to_s } }
+
+  idmap = {}
+  library['items'].each_with_index{|item, i| idmap[item['itemID']] = i }
+
+  library['collections'] = [] if nocollections
+
+  scrubhash = lambda{|hash|
+    hash.keys.each{|k|
+      case hash[k]
+        when Array, Hash
+          hash.delete(k) if hash[k].empty?
+        when String
+          hash.delete(k) if hash[k].strip == ''
+        when NilClass
+          hash.delete(k)
+      end
+    }
+  }
+
+  library['items'].each_with_index{|item, i|
+    item['itemID'] = i
+    item.delete('multi')
+    item.delete('accessDate')
+
+    item['creators'] ||= []
+    item['creators'].each{|creator|
+      creator.delete('creatorID')
+      creator.delete('multi')
+      scrubhash.call(creator)
+    }
+
+    # attachment order doesn't matter
+    item['attachments'] ||= []
+    item['attachments'].each{|att|
+      att.delete('path')
+      scrubhash.call(att)
+    }
+    item['attachments'].sort_by!{|att| %w{title url mimeType}.collect{|field| att[field]} }
+
+    item['note'] = Nokogiri::HTML(item['note']).inner_text.gsub(/[\s\n]+/, ' ').strip if item['note']
+    item.delete('__citekey__')
+    item.delete('__citekeys__')
+
+    scrubhash.call(item)
+  }
+
+  renum = lambda{|collection|
+    collection.delete('id')
+    # item order doesn't matter
+    collection['items'] = collection['items'].collect{|id| idmap[id]}.sort if collection['items']
+    collection['collections'].each{|sub| renum.call(sub) } if collection['collections']
+  }
+
+  renum.call({'collections' => library['collections']})
+end
+
 Then /^the library (without collections )?should match '(.+)'$/ do |nocollections, filename|
   expected = testfile(filename)
   expected = JSON.parse(open(expected).read)
+  normalize_library(expected, nocollections)
 
   found = $Firefox.BetterBibTeX.library
   throw "library is not a hash!" unless found.is_a?(Hash)
+  normalize_library(found, nocollections)
 
-  [expected, found].each_with_index{|library, i|
-    library.delete('keymanager')
-    library.delete('cache')
-
-    library['items'].each{|item|
-      item.delete('multi')
-      (item['creators'] || []).each{|creator|
-        creator.delete('creatorID')
-        creator.delete('multi')
-      }
-    }
-    library['collections'] = [] if nocollections
-  }
-  
-  renum = lambda{|collection, idmap, items=true|
-    collection.delete('id')
-    collection['items'] = collection['items'].collect{|i| idmap[i] } if items
-    collection['collections'].each{|coll| renum.call(coll, idmap) } if collection['collections']
-  }
-  [expected, found].each_with_index{|library, i|
-    library.delete('config')
-    newID = {}
-    library['items'].sort!{|a, b| a['itemID'] <=> b['itemID'] }
-    library['items'].each_with_index{|item, i|
-      newID[item['itemID']] = i
-      item['itemID'] = i
-      item.delete('itemID')
-      item['attachments'].each{|a| a.delete('path')} if item['attachments']
-      item['note'] = Nokogiri::HTML(item['note']).inner_text.gsub(/[\s\n]+/, ' ').strip if item['note']
-      item.delete('__citekey__')
-      item.delete('__citekeys__')
-    }
-    renum.call(library, newID, false)
-    library.normalize!
-  }
-
-  expect(JSON.pretty_generate(found)).to eq(JSON.pretty_generate(expected))
+  options = { wrap: 40, sort: true }
+  expect(JSON.neat_generate(found, options)).to eq(JSON.neat_generate(expected, options))
 end
 
 def preferenceValue(value)

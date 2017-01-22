@@ -68,21 +68,3 @@ def browserLog
   log = log.join("\n")
   return log
 end
-
-class Array
-  def normalize!
-    self.each{|e|
-      e.normalize! if e.respond_to?('normalize!')
-    }
-    #self.sort! if self.size > 0 && (self[0].is_a?(String) || self[0].is_a?(Integer))
-  end
-end
-class Hash
-  def normalize!
-    self.keys.sort{|a, b| a != b ? a <=> b : self[a] <=> self[b]}.each{|k|
-      self[k].normalize!  if self[k].respond_to?('normalize!')
-      self[k] = self.delete(k)
-      self.delete(k) if self[k] == [] || self[k] == '' || self[k] == {}
-    }
-  end
-end

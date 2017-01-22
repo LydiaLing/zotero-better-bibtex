@@ -90,14 +90,15 @@ raw
   / '{' text:raw* '}'             { return new String('{' + text.join('') + '}') }
 
 string
-  = text:plaintext                { return text }
+  = text:plaintext                { return text; }
+  / '$' text:plaintext '$'        { return text.replace(/[A-Z]+/gi, function(chars) { return '<i>' + chars + '</i>'; }); }
   / lookup
   / "\\mbox{}"                    { return "\u200B"; }
   / "\\\\"                        { return "\n" }
   / bracket:[\[\]]                { return bracket }
   / "\\" text:quotedchar          { return text }
   / text:_+                       { return ' ' }
-  / [#$&]+                        { return '' } /* macro parameters, math mode, table separator */
+  / [#$&]+                        { return '' } /* macro parameters, unused math mode, table separator */
   / '_' text:param                { return '<sub>' + text + '</sub>' }
   / '^' text:param                { return '<sup>' + text + '</sup>' }
   / "\\vphantom" text:bracedparam { return '' }
@@ -109,7 +110,7 @@ string
   / "\\textbf" text:bracedparam   { return '<b>' + text + '</b>' }
   / "\\textsc" text:bracedparam   { return '<span style="font-variant: small-caps;">' + text + '</span>' }
   / '{' text:string* '}'          { return new String(bibtex.flatten(text)) } // use 'new String', not 'String', because only 'new String' will match 'instanceof'!
-  / '$' text:string* '$'          { return bibtex.flatten(text) }
+  /* / '$' text:string* '$'          { return bibtex.flatten(text) } */
   /* / "%" [^\n]* "\n"            { return '' }          comment */
   / '%'                           { return '%' } // this doesn't feel right
   / "\\" command:[^a-z] ('[' key_value* ']')?  param:param { return bibtex.command(command, param); /* single-char command */ }
