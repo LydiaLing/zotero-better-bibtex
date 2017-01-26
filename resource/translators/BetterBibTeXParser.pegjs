@@ -3,7 +3,7 @@
   // Zotero.debug('parser options:' + JSON.stringify(options));
   var csquotes = bibtex.options.csquotes || '\u201C\u201D';
 
-  var inMathMode = false;
+  var preLevel = 0;
 
   function say(str) {
     bibtex.log(str);
@@ -99,7 +99,8 @@ string
   / bracket:[\[\]]                { return bracket }
   / "\\" text:quotedchar          { return text }
   / text:_+                       { return ' ' }
-  / &{return options.preserveMath } "$" { inMathMode = !inMathMode; return inMathMode ? '<pre>$' : '$</pre>'; }
+  / &{ return options.preserveMath } "$" text:pre "$" { return text }
+  / &{ return options.preserveMath } "\\ensuremath{" text:pre "}" { return text }
   / [#$&]+                        { return '' } /* macro parameters, unused math mode, table separator */
   / '_' text:param                { return '<sub>' + text + '</sub>' }
   / '^' text:param                { return '<sup>' + text + '</sup>' }
@@ -119,6 +120,12 @@ string
   / "\\" cmd:[^a-z] ('[' key_value* ']')?  _+ { return lookup("\\" + cmd) || cmd; /* single-char command without parameter */ }
   / "\\" cmd:plaintext ('[' key_value* ']')? '{' text:string* '}' { return (lookup("\\" + cmd) || '') + bibtex.flatten(text); /* command */ }
   / "\\" cmd:plaintext _* { return lookup("\\" + cmd) || cmd; /* bare command */ }
+
+pre = &{ preLevel += 1; return true; } text:string* &{ prelevel -= 1; return true; } {
+  text = bibtex.flatten(text)
+  if (preLevel == 0) { text = '<pre>' + text + '</pre>' }
+  return text
+}
 
 terminator = _+ / ![a-z0-9]
 
