@@ -3,6 +3,8 @@
   // Zotero.debug('parser options:' + JSON.stringify(options));
   var csquotes = bibtex.options.csquotes || '\u201C\u201D';
 
+  var inMathMode = false;
+
   function say(str) {
     bibtex.log(str);
     return true;
@@ -91,13 +93,13 @@ raw
 
 string
   = text:plaintext                { return text; }
-  / '$' text:plaintext '$'        { return text.replace(/[A-Z]+/gi, function(chars) { return '<i>' + chars + '</i>'; }); }
   / lookup
   / "\\mbox{}"                    { return "\u200B"; }
   / "\\\\"                        { return "\n" }
   / bracket:[\[\]]                { return bracket }
   / "\\" text:quotedchar          { return text }
   / text:_+                       { return ' ' }
+  / &{return options.preserveMath } "$" { inMathMode = !inMathMode; return inMathMode ? '<pre>$' : '$</pre>'; }
   / [#$&]+                        { return '' } /* macro parameters, unused math mode, table separator */
   / '_' text:param                { return '<sub>' + text + '</sub>' }
   / '^' text:param                { return '<sup>' + text + '</sup>' }
