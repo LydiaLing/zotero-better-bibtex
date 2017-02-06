@@ -37,11 +37,10 @@ ValidCSLTypes = [
 ]
 
 doExport = ->
-
   postscript = Zotero.getHiddenPref('better-bibtex.postscript')
   if (typeof postscript == 'string' && postscript.trim() != '')
     try
-      postscript = new Function('item', postscript)
+      postscript = new Function('csl', 'item', postscript)
       Zotero.debug("Installed postscript: #{JSON.stringify(postscript)}")
     catch err
       Zotero.debug("Failed to compile postscript: #{err}\n\n#{JSON.stringify(postscript)}")
@@ -115,7 +114,10 @@ doExport = ->
         csl.accessed = {"date-parts": [[ m[1], parseInt(m[2]), parseInt(m[3]) ]]}
       delete csl.genre if csl.type == 'broadcast' && csl.genre == 'television broadcast'
 
-      postscript.call(csl, item) if postscript
+      try
+        postscript.call(csl, item) if postscript
+      catch e
+        Translator.debug('CSL postscript failed:', e)
 
       csl = serialize(csl)
       Zotero.BetterBibTeX.cache.store(item.itemID, Translator.header, citekey, csl)
