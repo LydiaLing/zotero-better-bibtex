@@ -37,6 +37,18 @@ ValidCSLTypes = [
 ]
 
 doExport = ->
+
+  postscript = Zotero.getHiddenPref('better-bibtex.postscript')
+  if (typeof postscript == 'string' && postscript.trim() != '')
+    try
+      postscript = new Function('item', postscript)
+      Zotero.debug("Installed postscript: #{JSON.stringify(postscript)}")
+    catch err
+      Zotero.debug("Failed to compile postscript: #{err}\n\n#{JSON.stringify(postscript)}")
+      postscript = null
+  else
+    postscript = null
+
   items = []
   while item = Zotero.nextItem()
     continue if item.itemType == 'note' || item.itemType == 'attachment'
@@ -102,6 +114,8 @@ doExport = ->
       if csl.accessed && csl.accessed.raw && (m = csl.accessed.raw.match(/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/))
         csl.accessed = {"date-parts": [[ m[1], parseInt(m[2]), parseInt(m[3]) ]]}
       delete csl.genre if csl.type == 'broadcast' && csl.genre == 'television broadcast'
+
+      postscript.call(csl, item) if postscript
 
       csl = serialize(csl)
       Zotero.BetterBibTeX.cache.store(item.itemID, Translator.header, citekey, csl)
