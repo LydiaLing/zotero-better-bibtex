@@ -339,7 +339,7 @@ Zotero.BetterBibTeX.init = ->
       ids = original.call(@, false) || []
 
       Zotero.BetterBibTeX.debug('search: looking for', searchText, 'to add to', ids)
-      for key in Zotero.BetterBibTeX.DB.collection.keys.where((k) -> k.citekey.toLowerCase().indexOf(searchText) >= 0)
+      for key in Zotero.BetterBibTeX.DB.collection.keys.find({citekey: { $regex: new RegExp(searchText.replace(/\s/g, '').replace(/,+/g, '|'), 'i') }})
         ids.push('' + key.itemID) unless ids.indexOf('' + key.itemID) >= 0
 
       return false if ids.length == 0
