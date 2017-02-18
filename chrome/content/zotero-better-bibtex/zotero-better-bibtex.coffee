@@ -339,8 +339,9 @@ Zotero.BetterBibTeX.init = ->
       ids = original.call(@, false) || []
 
       Zotero.BetterBibTeX.debug('search: looking for', searchText, 'to add to', ids)
-      for key in Zotero.BetterBibTeX.DB.collection.keys.find({citekey: { $regex: new RegExp(searchText.replace(/\s/g, '').replace(/,+/g, '|'), 'i') }})
-        ids.push('' + key.itemID) unless ids.indexOf('' + key.itemID) >= 0
+      if regex = searchText.split(',').filter((k) -> k.trim()).join('|')
+        for key in Zotero.BetterBibTeX.DB.collection.keys.find({citekey: { $regex: new RegExp(regex, 'i') }})
+          ids.push('' + key.itemID) unless ids.indexOf('' + key.itemID) >= 0
 
       return false if ids.length == 0
       return Zotero.Search.idsToTempTable(ids) if asTempTable
