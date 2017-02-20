@@ -52,7 +52,14 @@ doExport = ->
         item.accessDate = item.accessDate.replace(/T?[0-9]{2}:[0-9]{2}:[0-9]{2}.*/, '').trim()
 
       csl = Zotero.Utilities.itemToCSLJSON(item)
-      csl['archive-place'] ?= item.place
+
+      # 637
+      delete csl['publisher-place']
+      delete csl['archive-place']
+      delete csl['event-place']
+      delete csl['original-publisher-place']
+      delete csl['publisher-place']
+      csl[if item.itemType == 'presentation' then 'event-place' else 'publisher-place'] = item.place if item.place
 
       csl.type = item.cslType if item.cslType in ValidCSLTypes
 
