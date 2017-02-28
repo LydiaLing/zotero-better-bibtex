@@ -16,5 +16,8 @@
     ]
   },
   "priority": 100,
-  "inRepository": true
+  "inRepository": true,
+  "configOptions": {
+    "serializationCache": true
+  }
 }

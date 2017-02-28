@@ -9,5 +9,8 @@
   "translatorType": 2,
   "browserSupport": "gcsv",
   "priority": 100,
-  "inRepository": true
+  "inRepository": true,
+  "configOptions": {
+    "serializationCache": true
+  }
 }
