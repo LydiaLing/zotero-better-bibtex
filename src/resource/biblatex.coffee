@@ -1,4 +1,8 @@
-Translator.fieldMap = {
+Reference = require('./reference.coffee')
+Exporter = require('./exporter.coffee')
+debug = require('./debug.coffee')
+
+Reference.installFieldMap({
   # Zotero          BibTeX
   place:            { name: 'location', enc: 'literal' }
   chapter:          { name: 'chapter' }
@@ -17,9 +21,9 @@ Translator.fieldMap = {
   conferenceName:   { name: 'eventtitle' }
   numPages:         { name: 'pagetotal' }
   type:             { name: 'type' }
-}
+})
 
-Translator.fieldEncoding = {
+Reference::fieldEncoding = {
   url: 'url'
   doi: 'verbatim'
   eprint: 'verbatim'
@@ -33,63 +37,6 @@ Translator.fieldEncoding = {
   verbb: 'verbatim'
   verbc: 'verbatim'
 }
-
-DateField =
-  field: (date, formatted, literal) ->
-    switch
-      when !date
-        field = {}
-
-      when !date.type
-        throw "Failed to parse #{date}: #{JSON.stringify(date)}"
-
-      when date.type == 'Verbatim'
-        field = { name: literal, value: date.verbatim }
-
-      when date.edtf && Translator.biblatexExtendedDateFormat
-        field = { name: formatted, value: date.replace(/~/g, '\u00A0') }
-
-      when date.type == 'Interval'
-        field = { name: formatted, value: @format(date.from) + '/' + @format(date.to) }
-
-      when date.year
-        field = { name: formatted, value: @format(date) }
-
-      else
-        field = {}
-
-    # well this is fairly dense... the date field is not an verbatim field, so the 'circa' symbol ('~') ought to mean a
-    # NBSP... but some magic happens in that field (always with the magic, BibLaTeX...). But hey, if I insert an NBSP,
-    # guess what that gets translated to!
-
-    return {} unless field.name && field.value
-
-    field.value = field.value.replace(/~/g, '\u00A0') if field.value
-
-    return field
-
-  pad: (v, pad) ->
-    return v if v.length >= pad.length
-    return (pad + v).slice(-pad.length)
-
-  year: (y) ->
-    if Math.abs(y) > 999
-      return '' + y
-    else
-      return (if y < 0 then '-' else '-') + ('000' + Math.abs(y)).slice(-4)
-
-  format: (date) ->
-    switch
-      when date.year && date.month && date.day  then  formatted = "#{@year(date.year)}-#{@pad(date.month, '00')}-#{@pad(date.day, '00')}"
-      when date.year && date.month              then  formatted = "#{@year(date.year)}-#{@pad(date.month, '00')}"
-      when date.year                            then  formatted = @year(date.year)
-      else                                            formatted = ''
-
-    if Translator.biblatexExtendedDateFormat
-      formatted += '?' if date.uncertain
-      formatted += '~' if date.approximate
-
-    return formatted
 
 Reference::requiredFields =
   article: ['author', 'title', 'journaltitle', 'year/date']
@@ -257,11 +204,71 @@ Reference::typeMap =
     videoRecording     : 'video'
     webpage            : 'online'
 
-doExport = ->
-  Translator.installPostscript()
+Translator.initialize = ->
+  Reference.installPostscript()
+
+DateField =
+  field: (date, formatted, literal) ->
+    switch
+      when !date
+        field = {}
+
+      when !date.type
+        throw "Failed to parse #{date}: #{JSON.stringify(date)}"
+
+      when date.type == 'Verbatim'
+        field = { name: literal, value: date.verbatim }
+
+      when date.edtf && Translator.preferences.biblatexExtendedDateFormat
+        field = { name: formatted, value: date.replace(/~/g, '\u00A0') }
+
+      when date.type == 'Interval'
+        field = { name: formatted, value: @format(date.from) + '/' + @format(date.to) }
+
+      when date.year
+        field = { name: formatted, value: @format(date) }
+
+      else
+        field = {}
+
+    # well this is fairly dense... the date field is not an verbatim field, so the 'circa' symbol ('~') ought to mean a
+    # NBSP... but some magic happens in that field (always with the magic, BibLaTeX...). But hey, if I insert an NBSP,
+    # guess what that gets translated to!
+
+    return {} unless field.name && field.value
+
+    field.value = field.value.replace(/~/g, '\u00A0') if field.value
+
+    return field
+
+  pad: (v, pad) ->
+    return v if v.length >= pad.length
+    return (pad + v).slice(-pad.length)
+
+  year: (y) ->
+    if Math.abs(y) > 999
+      return '' + y
+    else
+      return (if y < 0 then '-' else '-') + ('000' + Math.abs(y)).slice(-4)
+
+  format: (date) ->
+    switch
+      when date.year && date.month && date.day  then  formatted = "#{@year(date.year)}-#{@pad(date.month, '00')}-#{@pad(date.day, '00')}"
+      when date.year && date.month              then  formatted = "#{@year(date.year)}-#{@pad(date.month, '00')}"
+      when date.year                            then  formatted = @year(date.year)
+      else                                            formatted = ''
+
+    if Translator.preferences.biblatexExtendedDateFormat
+      formatted += '?' if date.uncertain
+      formatted += '~' if date.approximate
+
+    return formatted
+
+Translator.doExport = ->
+  Exporter = new Exporter()
 
   Zotero.write('\n')
-  while item = Translator.nextItem()
+  while item = Exporter.nextItem()
     ref = new Reference(item)
 
     ref.referencetype = 'inbook' if item.__type__ in ['bookSection', 'chapter'] and ref.hasCreator('bookAuthor')
@@ -343,7 +350,7 @@ doExport = ->
             ref.add({ name: 'journaltitle', value: item.publicationTitle, preserveBibTeXVariables: true })
           else
             abbr = Zotero.BetterBibTeX.journalAbbrev(item)
-            if Translator.useJournalAbbreviation && abbr
+            if Translator.options.useJournalAbbreviation && abbr
               ref.add({ name: 'journaltitle', value: abbr, preserveBibTeXVariables: true })
             else if Translator.BetterBibLaTeX && item.publicationTitle.match(/arxiv:/i)
               ref.add({ name: 'journaltitle', value: item.publicationTitle, preserveBibTeXVariables: true })
@@ -414,7 +421,7 @@ doExport = ->
     ref.add({ urldate: Zotero.Utilities.strToISO(item.accessDate) }) if item.accessDate && item.url
 
     if item.date
-      date = Zotero.BetterBibTeX.parseDateToObject(item.date, {locale: item.language, edtf: Translator.biblatexExtendedDateFormat})
+      date = Zotero.BetterBibTeX.parseDateToObject(item.date, {locale: item.language, edtf: Translator.preferences.biblatexExtendedDateFormat})
       ref.add(DateField.field(date, 'date', 'year'))
       ref.add(DateField.field(date.origdate, 'origdate', 'origdate'))
 
@@ -429,7 +436,7 @@ doExport = ->
     ref.add({ name: (if ref.has.note then 'annotation' else 'note'), value: item.extra, allowDuplicates: true })
     ref.add({ name: 'keywords', value: item.tags, enc: 'tags' })
 
-    if item.notes and Translator.exportNotes
+    if item.notes and Translator.options.exportNotes
       for note in item.notes
         ref.add({ name: 'annotation', value: Zotero.Utilities.unescapeHTML(note.note), allowDuplicates: true, html: true })
 
@@ -442,21 +449,21 @@ doExport = ->
     ref.add({ name: 'file', value: item.attachments, enc: 'attachments' })
 
     if item.volumeTitle # #381
-      Translator.debug('volumeTitle: true, type:', item._type__, 'has:', Object.keys(ref.has))
+      debug('volumeTitle: true, type:', item._type__, 'has:', Object.keys(ref.has))
       if item.__type__ == 'book' && ref.has.title
-        Translator.debug('volumeTitle: for book, type:', item.__type__, 'has:', Object.keys(ref.has))
+        debug('volumeTitle: for book, type:', item.__type__, 'has:', Object.keys(ref.has))
         ref.add({name: 'maintitle', value: item.volumeTitle, caseConversion: true })
         [ref.has.title.bibtex, ref.has.maintitle.bibtex] = [ref.has.maintitle.bibtex, ref.has.title.bibtex]
         [ref.has.title.value, ref.has.maintitle.value] = [ref.has.maintitle.value, ref.has.title.value]
 
       if item.__type__ in ['bookSection', 'chapter'] && ref.has.booktitle
-        Translator.debug('volumeTitle: for bookSection, type:', item.__type__, 'has:', Object.keys(ref.has))
+        debug('volumeTitle: for bookSection, type:', item.__type__, 'has:', Object.keys(ref.has))
         ref.add({name: 'maintitle', value: item.volumeTitle, caseConversion: true })
         [ref.has.booktitle.bibtex, ref.has.maintitle.bibtex] = [ref.has.maintitle.bibtex, ref.has.booktitle.bibtex]
         [ref.has.booktitle.value, ref.has.maintitle.value] = [ref.has.maintitle.value, ref.has.booktitle.value]
 
     ref.complete()
 
-  Translator.complete()
+  Exporter.complete()
   Zotero.write('\n')
   return

@@ -237,26 +237,6 @@ file 'chrome/content/zotero-better-bibtex/translator-metadata.js' => Dir['resour
   }
 end
 
-file 'defaults/preferences/defaults.js' => ['defaults/preferences/defaults.yml', 'Rakefile'] do |t|
-  prefs = YAML::load_file(t.source)
-  open(t.name, 'w'){|f|
-    prefs.each_pair{|k, v|
-      k = "extensions.zotero.translators.better-bibtex.#{k}"
-      f.puts("pref(#{k.to_json}, #{v.to_json});")
-    }
-    prefs.each_pair{|k, v|
-      k = "extensions.zotero.translators.better-bibtex.#{k}"
-      f.puts("pref(#{('services.sync.prefs.sync.' + k).to_json}, true);")
-    }
-  }
-end
-
-file 'resource/translators/preferences.js' => ['defaults/preferences/defaults.yml', 'Rakefile'] do |t|
-  open(t.name, 'w'){|f|
-    f.puts("Translator.preferences = #{JSON.pretty_generate(YAML::load_file(t.source))}")
-  }
-end
-
 # someone thinks HTML-loaded javascripts are harmful. If that were true, you have bigger problems than this
 # people.
 file 'resource/reports/cacheActivity.txt' => 'resource/reports/cacheActivity.html' do |t|
@@ -662,7 +642,7 @@ file UnicodeConverter.cache => 'lib/unicode_table.rb' do |t|
   UnicodeConverter.new.download
 end
 
-file 'resource/translators/latex_unicode_mapping.coffee' => UnicodeConverter.cache do |t|
+file 'src/resource/latex_unicode_mapping.coffee' => UnicodeConverter.cache do |t|
   puts "#{t.name} outdated"
   cleanly(t.name) do
     UnicodeConverter.new.mapping(t.name)

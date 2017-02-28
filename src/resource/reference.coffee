@@ -1,3 +1,8 @@
+XRegExp = require('xregexp')
+debug = require('./debug.coffee')
+Exporter = require('./exporter.coffee')
+text2latex = require('./unicode_translator.coffee').text2latex
+
 ###
 # h1 Global object: Translator
 #
@@ -27,6 +32,9 @@
 ###
 class Reference
   constructor: (@item) ->
+    # has to be constructed at runtime here because a static version would be cached by the Zotero translation framework
+    Reference::Exporter ||= new Exporter()
+
     @fields = []
     @has = Object.create(null)
     @raw = (Translator.rawLaTag in @item.tags)
@@ -34,13 +42,13 @@ class Reference
 
     if !@item.language
       @english = true
-      Translator.debug('detecting language: defaulting to english')
+      debug('detecting language: defaulting to english')
     else
       langlc = @item.language.toLowerCase()
       @language = Language.babelMap[langlc.replace(/[^a-z0-9]/, '_')]
       @language ||= Language.babelMap[langlc.replace(/-[a-z]+$/i, '').replace(/[^a-z0-9]/, '_')]
       @language ||= Language.fromPrefix(langlc)
-      Translator.debug('detecting language:', {langlc, language: @language})
+      debug('detecting language:', {langlc, language: @language})
       if @language
         @language = @language[0]
       else
@@ -51,12 +59,12 @@ class Reference
           @language = @item.language
 
       @english = @language in ['american', 'british', 'canadian', 'english', 'australian', 'newzealand', 'USenglish', 'UKenglish']
-      Translator.debug('detected language:', {language: @language, english: @english})
+      debug('detected language:', {language: @language, english: @english})
 
-    @override = Translator.extractFields(@item)
+    @override = @Exporter.extractFields(@item)
     @item.__type__ = @item.cslType || @item.itemType
-    Translator.debug('postextract: item:', @item)
-    Translator.debug('postextract: overrides:', @override)
+    debug('postextract: item:', @item)
+    debug('postextract: overrides:', @override)
 
     @referencetype = @typeMap.csl[@item.cslType] || @typeMap.zotero[@item.itemType] || 'misc'
     if @referencetype.type
@@ -357,7 +365,7 @@ class Reference
   # @return {String} field.value encoded as author-style value
   ###
   enc_latex: (f, raw) ->
-    Translator.debug('enc_latex:', {f, raw, english: @english})
+    debug('enc_latex:', {f, raw, english: @english})
     return f.value if typeof f.value == 'number'
     return null unless f.value
 
@@ -367,7 +375,7 @@ class Reference
 
     return f.value if f.raw || raw
 
-    value = LaTeX.text2latex(f.value, {mode: (if f.html then 'html' else 'text'), caseConversion: f.caseConversion && @english})
+    value = text2latex(f.value, {mode: (if f.html then 'html' else 'text'), caseConversion: f.caseConversion && @english})
     value = "{#{value}}" if f.caseConversion && Translator.BetterBibTeX && !@english
 
     value = new String("{#{value}}") if f.value instanceof String
@@ -476,7 +484,7 @@ class Reference
     throw "duplicate field '#{field.name}' for #{@item.__citekey__}" if @has[field.name] && !field.allowDuplicates
 
     if ! field.bibtex
-      Translator.debug('add:', {
+      debug('add:', {
         field
         preserve: Translator.preserveBibTeXVariables
         match: @isBibVar(field.value)
@@ -484,7 +492,7 @@ class Reference
       if typeof field.value == 'number' || (field.preserveBibTeXVariables && @isBibVar(field.value))
         value = '' + field.value
       else
-        enc = field.enc || Translator.fieldEncoding[field.name] || 'latex'
+        enc = field.enc || @fieldEncoding[field.name] || 'latex'
         value = @["enc_#{enc}"](field, @raw)
 
         return unless value
@@ -499,7 +507,7 @@ class Reference
     field.bibtex = field.bibtex.normalize('NFKC') if @normalize
     @fields.push(field)
     @has[field.name] = field
-    Translator.debug('added:', field)
+    debug('added:', field)
 
   ###
   # Remove a field from the reference field set
@@ -550,7 +558,7 @@ class Reference
           fields.push({ name: mapped, value: value.value, caseConversion, raw: false, enc: (if cslvar.type == 'creator' then 'creators' else cslvar.type) })
 
         else
-          Translator.debug('Unmapped CSL field', name, '=', value.value)
+          debug('Unmapped CSL field', name, '=', value.value)
 
       else
         switch name
@@ -576,10 +584,10 @@ class Reference
             fields.push({ name, value: value.value, raw: value.raw })
 
           else
-            Translator.debug('fields.push', { name, value: value.value, raw: value.raw })
+            debug('fields.push', { name, value: value.value, raw: value.raw })
             fields.push({ name, value: value.value, raw: value.raw })
 
-    for name in Translator.skipFields
+    for name in Translator.preferences.skipFields
       @remove(name)
 
     for field in fields
@@ -592,7 +600,7 @@ class Reference
         @remove(field.name)
         continue
 
-      field = @clone(Translator.BibLaTeXDataFieldMap[field.name], field.value) if Translator.BibLaTeXDataFieldMap[field.name]
+      field = @clone(@fieldMap[field.name], field.value) if @fieldMap[field.name]
       field.replace = true
       @add(field)
 
@@ -601,7 +609,7 @@ class Reference
     try
       @postscript()
     catch err
-      Translator.debug('postscript error:', err.message || err.name)
+      debug('postscript error:', err.message || err.name)
 
     # sort fields for stable tests
     @fields.sort((a, b) -> ("#{a.name} = #{a.value}").localeCompare(("#{b.name} = #{b.value}"))) if Translator.testing
@@ -613,12 +621,12 @@ class Reference
     ref += "\n"
     Zotero.write(ref)
 
-    @data.DeclarePrefChars = Translator.unique_chars(@data.DeclarePrefChars)
+    @data.DeclarePrefChars = @Exporter.unique_chars(@data.DeclarePrefChars)
 
-    Zotero.BetterBibTeX.cache.store(@item.itemID, Translator, @item.__citekey__, ref, @data) if Translator.caching
+    Zotero.BetterBibTeX.cache.store(@item.itemID, @Exporter.context, @item.__citekey__, ref, @data) if @Exporter.caching
 
     Translator.preamble.DeclarePrefChars += @data.DeclarePrefChars if @data.DeclarePrefChars
-    Translator.debug('item.complete:', {data: @data, preamble: Translator.preamble})
+    debug('item.complete:', {data: @data, preamble: Translator.preamble})
 
   toVerbatim: (text) ->
     if Translator.BetterBibTeX
@@ -922,3 +930,19 @@ Language.fromPrefix = (langcode) ->
       @prefix[langcode] = false
 
   return @prefix[langcode]
+
+Reference.installPostscript = ->
+  postscript = Translator.preferences.postscript
+  return unless typeof postscript == 'string' && postscript.trim() != ''
+  try
+    Reference::postscript = new Function(postscript)
+    Zotero.debug("Installed postscript: #{JSON.stringify(postscript)}")
+  catch err
+    Zotero.debug("Failed to compile postscript: #{err}\n\n#{JSON.stringify(postscript)}")
+
+Reference.installFieldMap = (fieldMap) ->
+  Reference::fieldMap = {}
+  for attr, f of fieldMap
+    Reference::fieldMap[f.name] = f if f.name
+
+module.exports = Reference

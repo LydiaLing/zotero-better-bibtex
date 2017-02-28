@@ -1,0 +1,13 @@
+{
+  "translatorID": "9b85ff96-ceb3-4ca2-87a9-154c18ab38b1",
+  "label": "Better BibTeX Quick Copy",
+  "creator": "Emiliano heyns",
+  "target": "txt",
+  "minVersion": "4.0.27",
+  "maxVersion": "",
+  "displayOptions": null,
+  "translatorType": 2,
+  "browserSupport": "gcsv",
+  "priority": 100,
+  "inRepository": true
+}

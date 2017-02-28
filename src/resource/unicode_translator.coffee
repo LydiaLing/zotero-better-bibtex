@@ -1,24 +1,35 @@
-LaTeX = {} unless LaTeX
+Exporter = require('./exporter.coffee')
+MarkupParser = require('./markupparser.coffee')
+debug = require('./debug.coffee')
+XRegExp = require('xregexp')
 
-LaTeX.text2latex = (text, options = {}) ->
-  options.mode ||= 'text'
-  return @html2latex(text, options)
+Text2LaTeX =
+  text2latex: (text, options = {}) ->
+    options.mode ||= 'text'
+    return Text2LaTeX.html2latex(text, options)
 
-LaTeX.html2latex = (html, options) ->
-  options.mode ||= 'html'
-  latex = (new @HTML(html, options)).latex
-  latex = latex.replace(/(\\\\)+\s*\n\n/g, "\n\n")
-  latex = latex.replace(/\n\n\n+/g, "\n\n")
-  latex = latex.replace(/{}([}])/g, '$1')
-  return latex
+  html2latex: (html, options) ->
+    options.mode ||= 'html'
+    latex = (new HTML(html, options)).latex
+    latex = latex.replace(/(\\\\)+\s*\n\n/g, "\n\n")
+    latex = latex.replace(/\n\n\n+/g, "\n\n")
+    latex = latex.replace(/{}([}])/g, '$1')
+    return latex
 
-class LaTeX.HTML
+module.exports = Text2LaTeX
+
+Mapping = require('./latex_unicode_mapping.coffee')
+
+class HTML
   constructor: (html, @options = {}) ->
+    # has to be constructed at runtime here because a static version would be cached by the Zotero translation framework
+    HTML::Exporter ||= new Exporter()
+
     @latex = ''
-    @mapping = (if Translator.unicode then LaTeX.toLaTeX.unicode else LaTeX.toLaTeX.ascii)
+    @mapping = (if @Exporter.unicode then Mapping.toLaTeX.unicode else Mapping.toLaTeX.ascii)
     @stack = []
 
-    @walk(Translator.MarkupParser.parse(html, @options))
+    @walk(MarkupParser.parse(html, @options))
 
   walk: (tag) ->
     return unless tag
@@ -84,7 +95,7 @@ class LaTeX.HTML
       when 'tbody', '#document', 'html', 'head', 'body' then # ignore
 
       else
-        Translator.debug("unexpected tag '#{tag.name}' (#{Object.keys(tag)})")
+        debug("unexpected tag '#{tag.name}' (#{Object.keys(tag)})")
 
     latex = @embrace(latex, latex.match(/^\\[a-z]+{\.\.\.}$/)) if latex != '...'
     latex = @embrace("\\textsc{#{latex}}", true) if tag.smallcaps
@@ -128,7 +139,7 @@ class LaTeX.HTML
         braced = 0
 
       c = @mapping.math[c] || @mapping.text[c] || c
-      latex += @embrace(c, LaTeX.toLaTeX.embrace[c])
+      latex += @embrace(c, Mapping.toLaTeX.embrace[c])
 
     # add any missing closing phantom braces
     switch braced

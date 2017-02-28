@@ -1,0 +1,19 @@
+{
+  "translatorID": "be78e3e1-c0b7-4bb6-affb-2d0bc1c19958",
+  "label": "Collected Notes",
+  "creator": "Emiliano heyns",
+  "target": "html",
+  "minVersion": "4.0.27",
+  "maxVersion": "",
+  "configOptions": {
+    "getCollections": true
+  },
+  "displayOptions": {
+    "Keep updated": false
+  },
+  "translatorType": 2,
+  "browserSupport": "gcsv",
+  "BetterBibTeX": null,
+  "priority": 100,
+  "inRepository": true
+}

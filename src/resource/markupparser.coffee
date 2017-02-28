@@ -1,6 +1,6 @@
 ### From https://raw.githubusercontent.com/Munawwar/neutron-html5parser/master/htmlparser.js ###
 
-class Translator.MarkupParser
+class MarkupParser
   # Regular Expressions for parsing tags and attributes
   re:
     startTag: /^<([-\w:]+)((?:\s+[^\s\/>"'=]+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)\s*>/
@@ -368,4 +368,4 @@ class Translator.MarkupParser
             @plaintext(text[0], pos + (length - text.length))
             text = text.substring(1)
 
-Translator.MarkupParser = new Translator.MarkupParser()
+module.exports = new MarkupParser()
