@@ -3,56 +3,63 @@ const webpack = require('webpack');
 const commonsPlugin = new webpack.optimize.CommonsChunkPlugin({ name: 'common', filename: 'common.bundle.js' })
 const TranslatorHeaderPlugin = require('./src/webpack-zotero-translator-header')
 
-module.exports = [
-  /*
-  {
-    plugins: [ commonsPlugin ],
-    context: path.resolve(__dirname, './src/chrome/content'),
-    entry: {
-      betterbibtex: './better-bibtex.js',
-      // preferences: './xul/preferences.js'
+module.exports = function(env) {
+  return [
+    /*
+    {
+      plugins: [ commonsPlugin ],
+      context: path.resolve(__dirname, './src/chrome/content'),
+      entry: {
+        betterbibtex: './better-bibtex.js',
+        // preferences: './xul/preferences.js'
+      },
+      output: {
+        path: path.resolve(__dirname, './chrome/content'),
+        filename: '[name].js',
+      },
+      module: {
+        loaders: [
+          { test: /\.js$/, exclude: /node_modules/, loader: "babel-loader" }
+        ]
+      }
     },
-    output: {
-      path: path.resolve(__dirname, './chrome/content'),
-      filename: '[name].js',
+    */
+    {
+      plugins: [ new TranslatorHeaderPlugin(env) ],
+      context: path.resolve(__dirname, './src/resource'),
+      entry: {
+        'Better BibLaTeX': './Better BibLaTeX.coffee',
+        'Better BibTeX': './Better BibTeX.coffee',
+        'Better BibTeX Quick Copy': './Better BibTeX Quick Copy.coffee',
+        'Better CSL JSON': './Better CSL JSON.coffee',
+        'Better CSL YAML': './Better CSL YAML.coffee',
+        'BetterBibTeX JSON': './BetterBibTeX JSON.coffee',
+        'Collected Notes': './Collected Notes.coffee',
+      },
+      output: {
+        path: path.resolve(__dirname, './resource'),
+        filename: '[name].js',
+      },
+      module: {
+        rules: [
+          { test: /\.coffee$/, use: [ 'coffee-loader' ] }
+        ]
+      }
     },
-  	module: {
-    	loaders: [
-  			{ test: /\.js$/, exclude: /node_modules/, loader: "babel-loader" }
-      ]
+    {
+      context: path.resolve(__dirname, './src/defaults/preferences'),
+      entry: {
+        defaults: './defaults.coffee'
+      },
+      output: {
+        path: path.resolve(__dirname, './defaults/preferences'),
+        filename: '[name].js',
+      },
+      module: {
+        rules: [
+          { test: /\.coffee$/, use: [ 'coffee-loader' ] }
+        ]
+      }
     }
-  },
-  */
-  {
-    plugins: [ new TranslatorHeaderPlugin() ],
-    context: path.resolve(__dirname, './src/resource'),
-    entry: {
-      'Better BibLaTeX': './biblatex.coffee',
-      // 'minimal': './minimal.coffee',
-    },
-    output: {
-      path: path.resolve(__dirname, './resource'),
-      filename: '[name].js',
-    },
-  	module: {
-      rules: [
-        { test: /\.coffee$/, use: [ 'coffee-loader' ] }
-      ]
-    }
-  },
-  {
-    context: path.resolve(__dirname, './src/defaults/preferences'),
-    entry: {
-      defaults: './defaults.coffee'
-    },
-    output: {
-      path: path.resolve(__dirname, './defaults/preferences'),
-      filename: '[name].js',
-    },
-  	module: {
-      rules: [
-        { test: /\.coffee$/, use: [ 'coffee-loader' ] }
-      ]
-    }
-  }
-]
+  ]
+}

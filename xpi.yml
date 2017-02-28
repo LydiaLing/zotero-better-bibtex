@@ -98,17 +98,10 @@ files:
 - install.rdf
 - resource/lib/citeproc.js
 - resource/reports/cacheActivity.txt
-- resource/translators/Better BibLaTeX.json
-- resource/translators/Better BibLaTeX.translator
-- resource/translators/Better BibTeX.json
-- resource/translators/Better BibTeX.translator
-- resource/translators/Better CSL JSON.json
-- resource/translators/Better CSL JSON.translator
-- resource/translators/Better CSL YAML.json
-- resource/translators/Better CSL YAML.translator
-- resource/translators/BetterBibTeX JSON.json
-- resource/translators/BetterBibTeX JSON.translator
-- resource/translators/Collected Notes.json
-- resource/translators/Collected Notes.translator
-- resource/translators/Better BibTeX Quick Copy.json
-- resource/translators/Better BibTeX Quick Copy.translator
+- resource/Better BibLaTeX.js
+- resource/Better BibTeX.js
+- resource/Better CSL JSON.js
+- resource/Better CSL YAML.js
+- resource/BetterBibTeX JSON.js
+- resource/Collected Notes.js
+- resource/Better BibTeX Quick Copy.js

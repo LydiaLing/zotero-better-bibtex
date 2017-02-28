@@ -1,14 +1,22 @@
-serialize = (csl) ->
-  for k, v of csl
-    csl[k] = (new @HTML(v)).markdown if typeof v == 'string' && v.indexOf('<') >= 0
-  YAML.safeDump([csl], {skipInvalid: true})
+YAML = require('js-yaml')
+Exporter = require('./csl.coffee')
+MarkupParser = require('./markupparser.coffee')
+debug = require('./debug.coffee')
 
-flush = (items) -> "---\nreferences:\n" + items.join("\n") + "...\n"
+Exporter::serialize = (csl) ->
+  for k, v of csl
+    csl[k] = (new HTML(v)).markdown if typeof v == 'string' && v.indexOf('<') >= 0
+  return YAML.safeDump([csl], {skipInvalid: true})
+
+Exporter::flush = (items) -> "---\nreferences:\n" + items.join("\n") + "...\n"
+
+Translator.doExport = ->
+  (new Exporter()).doExport()
 
 class HTML
   constructor: (html) ->
     @markdown = ''
-    @walk(Translator.MarkupParser.parse(html))
+    @walk(MarkupParser.parse(html))
 
   walk: (tag) ->
     return unless tag
@@ -44,7 +52,7 @@ class HTML
       when 'tbody', '#document', 'html', 'head', 'body' then # ignore
 
       else
-        Translator.debug("unexpected tag '#{tag.name}'")
+        debug("unexpected tag '#{tag.name}'")
 
     for child in tag.children
       @walk(child)
@@ -70,3 +78,4 @@ class HTML
 
       when 'span'
         @markdown += '</span>' if Object.keys(tag.attr).length > 0
+

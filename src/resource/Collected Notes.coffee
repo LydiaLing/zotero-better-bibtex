@@ -1,14 +1,18 @@
+Exporter = require('./exporter.coffee')
+
 HTMLEncode = (text) -> text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 class Report
   constructor: ->
+    @Exporter = new Exporter()
+
     @items = Object.create(null)
     while item = Zotero.nextItem()
       @items[item.itemID] = item if item.itemType == 'note' || item.notes?.length > 0
 
     @itemInCollection = Object.create(null)
     @collections = []
-    @mark(Translator.collections)
+    @mark(@Exporter.collections)
 
     title = HTMLEncode(Zotero.getOption('exportFilename').replace(/\.[^\.]*$/i, ''))
 
@@ -19,7 +23,7 @@ class Report
       notes.push(item)
     @notes(notes, 1)
 
-    @walk(Translator.collections, 1)
+    @walk(@Exporter.collections, 1)
     @html += '</body></html>'
 
   walk: (collection, level) ->
@@ -99,8 +103,7 @@ class Report
 
     @collections.pop()
 
-doExport = ->
-  Translator.initialize()
+Translator.doExport = ->
   report = new Report()
 
   Zotero.write(report.html)

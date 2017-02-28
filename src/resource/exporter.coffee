@@ -1,4 +1,5 @@
 debug = require('./debug.coffee')
+JSON5 = require('json5')
 
 class Exporter
   constructor: ->

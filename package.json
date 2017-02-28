@@ -26,13 +26,16 @@
     "he": "^1.1.1",
     "js-beautify": "^1.6.9",
     "js-yaml": "^3.8.1",
+    "json5": "^0.5.1",
     "lokijs": "^1.4.2",
     "marked": "^0.3.6",
     "npm-check-updates": "^2.10.2",
     "pegjs": "^0.10.0",
-    "transliteration": "^1.5.3"
+    "transliteration": "^1.5.3",
+    "xregexp": "^3.1.1"
   },
   "devDependencies": {
-    "coffee-loader": "^0.7.3"
+    "coffee-loader": "^0.7.3",
+    "webpack": "^2.2.1"
   }
 }

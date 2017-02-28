@@ -17,17 +17,6 @@
   },
   "translatorType": 3,
   "browserSupport": "gcsv",
-  "BetterBibTeX": {
-    "dependencies": [
-      "xregexp-all",
-      "reference",
-      "markupparser",
-      "unicode_translator",
-      "latex_unicode_mapping",
-      "BetterBibTeXParserSupport",
-      "BetterBibTeXParser"
-    ]
-  },
   "priority": 199,
   "inRepository": true
 }

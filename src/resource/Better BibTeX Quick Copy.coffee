@@ -1,48 +1,39 @@
+Exporter = require('./exporter.coffee')
+debug = require('./debug.coffee')
+
 Mode =
-  gitbook: ->
-    citations = []
-    while item = Translator.nextItem()
-      citations.push("{{ \"#{item.__citekey__}\" | cite }}")
+  gitbook: (items) ->
+    citations = ("{{ \"#{item.__citekey__}\" | cite }}" for item in items)
     Zotero.write(citations.join(''))
 
-  atom: ->
-    keys = []
-    while item = Translator.nextItem()
-      Translator.debug('item:', item)
-      keys.push(item.__citekey__)
+  atom: (items) ->
+    keys = (item.__citekey__ for item in items)
     if keys.length == 1
       Zotero.write("[](#@#{keys[0]})")
     else
       Zotero.write("[](?@#{keys.join(',')})")
 
-  latex: ->
-    keys = []
-    while item = Translator.nextItem()
-      Translator.debug('item:', item)
-      keys.push(item.__citekey__)
+  latex: (items) ->
+    keys = (item.__citekey__ for item in items)
 
-    cmd = "#{Zotero.getHiddenPref('better-bibtex.citeCommand')}".trim()
+    cmd = "#{Translator.preferences.citeCommand}".trim()
     if cmd == ''
       Zotero.write(keys.join(','))
     else
       Zotero.write("\\#{cmd}{#{keys.join(',')}}")
 
-  citekeys: ->
-    keys = []
-    while item = Translator.nextItem()
-      keys.push(item.__citekey__)
+  citekeys: (items) ->
+    keys = (item.__citekey__ for item in items)
     Zotero.write(keys.join(','))
 
-  pandoc: ->
-    keys = []
-    while item = Translator.nextItem()
-      keys.push("@#{item.__citekey__}")
+  pandoc: (items) ->
+    keys = (item.__citekey__ for item in items)
     keys = keys.join('; ')
-    keys = "[#{keys}]" if Zotero.getHiddenPref('better-bibtex.quickCopyPandocBrackets')
+    keys = "[#{keys}]" if Translator.preferences.quickCopyPandocBrackets
     Zotero.write(keys)
 
-  orgmode: ->
-    while item = Translator.nextItem()
+  orgmode: (items) ->
+    for item in items
       m = item.uri.match(/\/(users|groups)\/([0-9]+|(local\/[^\/]+))\/items\/([A-Z0-9]{8})$/)
       throw "Malformed item uri #{item.uri}" unless m
 
@@ -52,7 +43,7 @@ Mode =
 
       switch type
         when 'users'
-          Translator.debug("Link to synced item #{item.uri}") unless groupID.indexOf('local') == 0
+          debug("Link to synced item #{item.uri}") unless groupID.indexOf('local') == 0
           id = "0_#{key}"
         when 'groups'
           throw "Missing groupID in #{item.uri}" unless groupID
@@ -60,9 +51,14 @@ Mode =
 
       Zotero.write("[[zotero://select/items/#{id}][@#{item.__citekey__}]]")
 
-doExport = ->
-  mode = Mode['' + Zotero.getOption('quickCopyMode')] || Mode[Zotero.getHiddenPref('better-bibtex.quickCopyMode')]
+Translator.doExport = ->
+  Exporter = new Exporter()
+  items = []
+  while item = Exporter.nextItem()
+    items.push(item)
+
+  mode = Mode["#{Translator.options.quickCopyMode}"] || Mode["#{Translator.preferences.quickCopyMode}"]
   if mode
-    mode.call(null)
+    mode.call(null, items)
   else
-    throw "Unsupported Quick Copy format '#{Zotero.getHiddenPref('better-bibtex.quickCopyMode')}'"
+    throw "Unsupported Quick Copy format '#{Translator.options.quickCopyMode || Translator.preferences.quickCopyMode}'"

@@ -10,17 +10,9 @@
   },
   "translatorType": 2,
   "browserSupport": "gcsv",
-  "BetterBibTeX": {
-    "dependencies": [
-      "xregexp-all",
-      "markupparser",
-      "betterCSL",
-      "yaml"
-    ]
-  },
-  "priority": 100,
-  "inRepository": true,
   "configOptions": {
     "serializationCache": true
-  }
+  },
+  "priority": 100,
+  "inRepository": true
 }

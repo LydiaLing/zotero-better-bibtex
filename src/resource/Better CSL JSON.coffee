@@ -1,3 +1,8 @@
-serialize = (csl) -> JSON.stringify(csl)
+Exporter = require('./csl.coffee')
 
-flush = (items) -> "[\n" + ("  #{item}" for item in items).join(",\n") + "\n]\n"
+Exporter::serialize = (csl) -> JSON.stringify(csl)
+
+Exporter::flush = (items) -> "[\n" + ("  #{item}" for item in items).join(",\n") + "\n]\n"
+
+Translator.doExport = ->
+  (new Exporter()).doExport()

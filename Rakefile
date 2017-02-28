@@ -272,10 +272,6 @@ file 'resource/translators/xregexp-all.js' => 'Rakefile' do |t|
   end
 end
 
-file 'resource/translators/json5.js' => 'Rakefile' do |t|
-  download('https://raw.githubusercontent.com/aseemk/json5/master/lib/json5.js', t.name)
-end
-
 file 'chrome/content/zotero-better-bibtex/test/tests.js' => ['Rakefile'] + Dir['resource/tests/*.feature'] do |t|
   features = t.sources.collect{|f| f.split('/')}.select{|f| f[0] == 'resource'}.collect{|f|
     f[0] = 'resource://zotero-better-bibtex'
@@ -497,29 +493,11 @@ file 'chrome/content/zotero-better-bibtex/lib/punycode.js' => 'Rakefile' do |t|
   browserify("Zotero.BetterBibTeX.punycode = require('punycode');", t.name)
 end
 
-Dir['resource/translators/*.yml'].each{|metadata|
-  translator = File.basename(metadata, File.extname(metadata))
-
-  sources = ['json5', 'translator', 'preferences', "#{translator}.header"]
-  header = YAML::load_file(metadata)
-  dependencies = header['BetterBibTeX']['dependencies'] if header['BetterBibTeX']
-  dependencies ||= []
-  sources += dependencies
-  sources += [translator]
-
-  sources = sources.collect{|src| "resource/translators/#{src}.js"}
-
-  file "resource/translators/#{translator}.translator" => sources + ['Rakefile'] do |t|
-    header.delete('BetterBibTeX')
-    header['lastUpdated'] = TIMESTAMP
-    FileUtils.mkdir_p(File.dirname(t.name))
-    open(t.name, 'w'){|f|
-      f.puts(JSON.pretty_generate(header))
-      sources.each{|src|
-        f.puts("\n// SOURCE: #{src}")
-        f.puts(open(src).read)
-      }
-    }
+Dir['src/resource/*.json'].each{|header|
+  source = header.sub(/on$/, '')
+  target = source.sub(/^src\//, '')
+  file target => [header, source, 'Rakefile'] do |t|
+    sh "#{NODEBIN}/webpack --env.release #{XPI.version.shellescape}"
   end
 }
 

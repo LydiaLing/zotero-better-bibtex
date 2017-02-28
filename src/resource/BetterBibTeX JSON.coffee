@@ -1,3 +1,5 @@
+Exporter = require('./exporter.coffee')
+
 scrub = (item) ->
   delete item.__citekey__
   delete item.libraryID
@@ -36,7 +38,7 @@ scrub = (item) ->
 
   return item
 
-detectImport = ->
+Translator.detectImport = ->
   json = ''
   while (str = Zotero.read(0x100000)) != false
     json += str
@@ -51,7 +53,7 @@ detectImport = ->
   Translator.log('BetterBibTeX JSON.detect:', match)
   return match
 
-doImport = ->
+Translator.doImport = ->
   json = ''
   while (str = Zotero.read(0x100000)) != false
     json += str
@@ -69,8 +71,9 @@ doImport = ->
       delete att.path if att.url
     item.complete()
 
-doExport = ->
-  Translator.initialize()
+Translator.doExport = ->
+  Exporter = new Exporter()
+
   data = {
     config: {
       id: Translator.header.translatorID
@@ -79,7 +82,7 @@ doExport = ->
       preferences: Translator.preferences
       options: Translator.options
     }
-    collections: Translator.collections
+    collections: Exporter.collections
     items: []
     cache: {
       # no idea why this doesn't work anymore. The security manager won't let me call toJSON on this anymore
@@ -90,7 +93,7 @@ doExport = ->
   while item = Zotero.nextItem()
     data.items.push(scrub(item))
 
-  if Zotero.getHiddenPref('better-bibtex.debug')
+  if Translator.preferences.debug
     data.keymanager = Zotero.BetterBibTeX.keymanager.cache()
     data.cache.items = Zotero.BetterBibTeX.cache.dump((item.itemID for item in data.items))
 

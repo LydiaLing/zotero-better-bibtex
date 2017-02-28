@@ -24,6 +24,7 @@ TranslatorHeaderPlugin.prototype.apply = function(compiler) {
 
             var Translator = {
               initialize: function () {},
+              release: ${JSON.stringify(options.release)},
               ${header.label.replace(/[^a-z]/ig, '')}: true,
               // Also present in ZOTERO_TRANSLATOR_INFO -- maybe pick it from there
               header: ${JSON.stringify(header, null, 2)},
@@ -68,6 +69,9 @@ TranslatorHeaderPlugin.prototype.apply = function(compiler) {
           }
           if (header.translatorType & 1) { // import
             postfix += `
+              function detectImport() {
+                Translator.detectImport()
+              }
               function doImport() {
                 Translator.getConfig()
                 Translator.initialize()
