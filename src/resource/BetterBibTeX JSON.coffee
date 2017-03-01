@@ -1,4 +1,5 @@
 Exporter = require('./exporter.coffee')
+debug = require('./debug.coffee')
 
 scrub = (item) ->
   delete item.__citekey__
@@ -39,19 +40,19 @@ scrub = (item) ->
   return item
 
 Translator.detectImport = ->
+  debug('BetterBibTeX JSON.detect: start')
   json = ''
   while (str = Zotero.read(0x100000)) != false
     json += str
+    throw 'Unlikely to be JSON' if json[0] != '{'
 
-  try
-    data = JSON.parse(json)
-  catch e
-    Translator.log('BetterBibTeX JSON.detect failed:', e)
-    return false
+  # a failure to parse will throw an error which a) is actually logged, and b) will count as "false"
+  data = JSON.parse(json)
 
-  match = data?.config?.id == Translator.header.translatorID && data.items
-  Translator.log('BetterBibTeX JSON.detect:', match)
-  return match
+  throw 'No config section' unless data.config
+  throw "ID mismatch: got #{data.config.id}, expected #{Translator.header.translatorID}" unless data.config.id == Translator.header.translatorID
+  throw 'No items' unless data.items && data.items.length
+  return true
 
 Translator.doImport = ->
   json = ''

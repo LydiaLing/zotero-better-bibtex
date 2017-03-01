@@ -78,7 +78,7 @@ class CSLExprter
         for name, value of fields
           continue unless value.format == 'csl'
   
-          switch Translator.CSLVariables[name].type
+          switch @Exporter.CSLVariables[name].type
             when 'date'
               csl[name] = Zotero.BetterBibTeX.parseDateToArray(value.value, {cslNull: true})
   

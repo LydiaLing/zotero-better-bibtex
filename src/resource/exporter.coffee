@@ -15,8 +15,7 @@ class Exporter
     @preamble = {DeclarePrefChars: ''}
     @citekeys = {}
     @attachmentCounter = 0
-    @rawLaTag = '#LaTeX'
-  
+
     # TODO: disable temporarily because this translator ID doesn't trigger itemID adding
     @caching = !Translator.options.exportFileData
   
@@ -231,7 +230,7 @@ class Exporter
         when 'collection' then sane.collections.push(@sanitizeCollection(c))
         else              throw "Unexpected collection member type '#{c.type}'"
   
-    sane.collections.sort( ( (a, b) -> a.name.localeCompare(b.name) ) ) if Translator.preferences.testing
+    sane.collections.sort( ( (a, b) -> a.name.localeCompare(b.name) ) ) if Translator.preferences.tests
   
     return sane
   
@@ -301,7 +300,7 @@ class Exporter
       if item.itemID in collection.items
         item.groups ||= []
         item.groups.push(collection.name)
-        item.groups.sort() if Translator.preferences.testing
+        item.groups.sort() if Translator.preferences.tests
   
       for coll in collection.collections
         JabRef.assignGroups(coll, item)
@@ -317,7 +316,7 @@ class Exporter
         if Translator.preferences.jabrefGroups == 3
           # todo: vars on Translator
           references = (@citekeys[id] for id in (collection.items || []) when @citekeys[id])
-          references.sort() if Translator.preferences.testing
+          references.sort() if Translator.preferences.tests
           collected = collected.concat(references)
         # what is the meaning of the empty cell at the end, JabRef?
         collected = collected.concat([''])

@@ -2,6 +2,7 @@ const path = require('path');
 const webpack = require('webpack');
 const commonsPlugin = new webpack.optimize.CommonsChunkPlugin({ name: 'common', filename: 'common.bundle.js' })
 const TranslatorHeaderPlugin = require('./src/webpack-zotero-translator-header')
+const PreferencesPlugin = require('./src/webpack-preferences-plugin')
 
 module.exports = function(env) {
   return [
@@ -24,6 +25,7 @@ module.exports = function(env) {
       }
     },
     */
+
     {
       plugins: [ new TranslatorHeaderPlugin(env) ],
       context: path.resolve(__dirname, './src/resource'),
@@ -46,20 +48,17 @@ module.exports = function(env) {
         ]
       }
     },
+
     {
+      plugins: [ new PreferencesPlugin(env) ],
       context: path.resolve(__dirname, './src/defaults/preferences'),
       entry: {
-        defaults: './defaults.coffee'
+        defaults: './defaults.json'
       },
       output: {
         path: path.resolve(__dirname, './defaults/preferences'),
         filename: '[name].js',
       },
-      module: {
-        rules: [
-          { test: /\.coffee$/, use: [ 'coffee-loader' ] }
-        ]
-      }
-    }
+    },
   ]
 }

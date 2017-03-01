@@ -35,9 +35,11 @@ class Reference
     # has to be constructed at runtime here because a static version would be cached by the Zotero translation framework
     Reference::Exporter ||= new Exporter()
 
+    @timestamp = Zotero.getHiddenPref('better-bibtex.test.timestamp') if Translator.preferences.tests
+
     @fields = []
     @has = Object.create(null)
-    @raw = (Translator.rawLaTag in @item.tags)
+    @raw = (Translator.preferences.rawLaTag in @item.tags)
     @data = {DeclarePrefChars: ''}
 
     if !@item.language
@@ -71,10 +73,7 @@ class Reference
       @add({ entrysubtype: @referencetype.subtype }) if @referencetype.subtype
       @referencetype = @referencetype.type
 
-    for own attr, f of Translator.fieldMap || {}
-      @add(@clone(f, @item[attr])) if f.name
-
-    @add({name: 'timestamp', value: Translator.testing_timestamp || @item.dateModified || @item.dateAdded})
+    @add({name: 'timestamp', value: @timestamp || @item.dateModified || @item.dateAdded})
 
     switch
       when (@item.libraryCatalog || '').toLowerCase() in ['arxiv.org', 'arxiv'] && (@item.arXiv = @arXiv.parse(@item.publicationTitle))
@@ -230,7 +229,7 @@ class Reference
 
     initials = (name.given || '').indexOf(@_enc_creators_initials_marker) # zero-width space
 
-    if Translator.biblatexExtendedNameFormat && (name['dropping-particle'] || name['non-dropping-particle'] || name['comma-suffix'])
+    if Translator.preferences.biblatexExtendedNameFormat && (name['dropping-particle'] || name['non-dropping-particle'] || name['comma-suffix'])
       if initials >= 0
         initials = name.given.substring(0, initials)
         initials = new String(initials) if initials.length > 1
@@ -291,9 +290,9 @@ class Reference
     family = @enc_latex({value: family})
     family = @enc_latex({value: @_enc_creators_pad_particle(name['dropping-particle'], true)}) + family if name['dropping-particle']
 
-    if Translator.BetterBibTeX && Translator.bibtexParticleNoOp && (name['non-dropping-particle'] || name['dropping-particle'])
+    if Translator.BetterBibTeX && Translator.preferences.bibtexParticleNoOp && (name['non-dropping-particle'] || name['dropping-particle'])
       family = '{\\noopsort{' + @enc_latex({value: name.family.toLowerCase()}) + '}}' + family
-      Translator.preamble.noopsort = true
+      @Exporter.preamble.noopsort = true
 
     name.given = @enc_latex({value: name.given}) if name.given
     name.suffix = @enc_latex({value: name.suffix}) if name.suffix
@@ -329,7 +328,7 @@ class Reference
 
           Zotero.BetterBibTeX.CSL.parseParticles(name)
 
-          unless Translator.BetterBibLaTeX && Translator.biblatexExtendedNameFormat
+          unless Translator.BetterBibLaTeX && Translator.preferences.biblatexExtendedNameFormat
             @useprefix ||= !!name['non-dropping-particle']
             @juniorcomma ||= (f.juniorcomma && name['comma-suffix'])
 
@@ -375,18 +374,18 @@ class Reference
 
     return f.value if f.raw || raw
 
-    value = text2latex(f.value, {mode: (if f.html then 'html' else 'text'), caseConversion: f.caseConversion && @english})
+    value = text2latex(f.value, {mode: (if f.html then 'html' else 'text'), caseConversion: (@caseConversion[f.name] || f.caseConversion) && @english})
     value = "{#{value}}" if f.caseConversion && Translator.BetterBibTeX && !@english
 
     value = new String("{#{value}}") if f.value instanceof String
     return value
 
   enc_tags: (f) ->
-    tags = (tag for tag in f.value || [] when tag && tag != Translator.rawLaTag)
+    tags = (tag for tag in f.value || [] when tag && tag != Translator.preferences.rawLaTag)
     return null if tags.length == 0
 
     # sort tags for stable tests
-    tags.sort() if Translator.testing
+    tags.sort() if Translator.preferences.tests
 
     tags = for tag in tags
       if Translator.BetterBibTeX
@@ -425,18 +424,18 @@ class Reference
       #att.path = att.path.replace(/^storage:/, '')
       att.path = att.path.replace(/(?:\s*[{}]+)+\s*/g, ' ')
 
-      attachment.saveFile(att.path, true) if Translator.exportFileData && attachment.saveFile && attachment.defaultPath
+      attachment.saveFile(att.path, true) if Translator.options.exportFileData && attachment.saveFile && attachment.defaultPath
 
       att.title ||= att.path.replace(/.*[\\\/]/, '') || 'attachment'
 
       att.mimetype = 'application/pdf' if !att.mimetype && att.path.slice(-4).toLowerCase() == '.pdf'
 
       switch
-        when Translator.testing
-          Translator.attachmentCounter += 1
-          att.path = "files/#{Translator.attachmentCounter}/#{att.path.replace(/.*[\/\\]/, '')}"
-        when Translator.exportPath && att.path.indexOf(Translator.exportPath) == 0
-          att.path = att.path.slice(Translator.exportPath.length)
+        when Translator.preferences.tests
+          @Exporter.attachmentCounter += 1
+          att.path = "files/#{@Exporter.attachmentCounter}/#{att.path.replace(/.*[\/\\]/, '')}"
+        when Translator.options.exportPath && att.path.indexOf(Translator.options.exportPath) == 0
+          att.path = att.path.slice(Translator.options.exportPath.length)
 
       attachments.push(att)
 
@@ -450,12 +449,12 @@ class Reference
       return a.path.localeCompare(b.path)
     )
 
-    return (att.path.replace(/([\\{};])/g, "\\$1") for att in attachments).join(';') if Translator.attachmentsNoMetadata
+    return (att.path.replace(/([\\{};])/g, "\\$1") for att in attachments).join(';') if Translator.preferences.attachmentsNoMetadata
     return ((part.replace(/([\\{}:;])/g, "\\$1") for part in [att.title, att.path, att.mimetype]).join(':') for att in attachments).join(';')
 
   isBibVarRE: /^[a-z][a-z0-9_]*$/i
   isBibVar: (value) ->
-    return Translator.preserveBibTeXVariables && value && typeof value == 'string' && @isBibVarRE.test(value)
+    return Translator.preferences.preserveBibTeXVariables && value && typeof value == 'string' && @isBibVarRE.test(value)
   ###
   # Add a field to the reference field set
   #
@@ -486,7 +485,7 @@ class Reference
     if ! field.bibtex
       debug('add:', {
         field
-        preserve: Translator.preserveBibTeXVariables
+        preserve: Translator.preferences.preserveBibTeXVariables
         match: @isBibVar(field.value)
       })
       if typeof field.value == 'number' || (field.preserveBibTeXVariables && @isBibVar(field.value))
@@ -527,9 +526,9 @@ class Reference
   postscript: ->
 
   complete: ->
-    if Translator.DOIandURL != 'both'
+    if Translator.preferences.DOIandURL != 'both'
       if @has.doi && @has.url
-        switch Translator.DOIandURL
+        switch Translator.preferences.DOIandURL
           when 'doi' then @remove('url')
           when 'url' then @remove('doi')
 
@@ -549,13 +548,12 @@ class Reference
 
       if value.format == 'csl'
         # CSL names are not in BibTeX format, so only add it if there's a mapping
-        cslvar = Translator.CSLVariables[name]
+        cslvar = @Exporter.CSLVariables[name]
         mapped = cslvar[(if Translator.BetterBibLaTeX then 'BibLaTeX' else 'BibTeX')]
         mapped = mapped.call(@) if typeof mapped == 'function'
-        caseConversion = name in ['title', 'shorttitle', 'origtitle', 'booktitle', 'maintitle']
 
         if mapped
-          fields.push({ name: mapped, value: value.value, caseConversion, raw: false, enc: (if cslvar.type == 'creator' then 'creators' else cslvar.type) })
+          fields.push({ name: mapped, value: value.value, raw: false, enc: (if cslvar.type == 'creator' then 'creators' else cslvar.type) })
 
         else
           debug('Unmapped CSL field', name, '=', value.value)
@@ -600,7 +598,6 @@ class Reference
         @remove(field.name)
         continue
 
-      field = @clone(@fieldMap[field.name], field.value) if @fieldMap[field.name]
       field.replace = true
       @add(field)
 
@@ -612,7 +609,7 @@ class Reference
       debug('postscript error:', err.message || err.name)
 
     # sort fields for stable tests
-    @fields.sort((a, b) -> ("#{a.name} = #{a.value}").localeCompare(("#{b.name} = #{b.value}"))) if Translator.testing
+    @fields.sort((a, b) -> ("#{a.name} = #{a.value}").localeCompare(("#{b.name} = #{b.value}"))) if Translator.preferences.tests
 
     ref = "@#{@referencetype}{#{@item.__citekey__},\n"
     ref += ("  #{field.name} = #{field.bibtex}" for field in @fields).join(',\n')
@@ -625,21 +622,21 @@ class Reference
 
     Zotero.BetterBibTeX.cache.store(@item.itemID, @Exporter.context, @item.__citekey__, ref, @data) if @Exporter.caching
 
-    Translator.preamble.DeclarePrefChars += @data.DeclarePrefChars if @data.DeclarePrefChars
-    debug('item.complete:', {data: @data, preamble: Translator.preamble})
+    @Exporter.preamble.DeclarePrefChars += @data.DeclarePrefChars if @data.DeclarePrefChars
+    debug('item.complete:', {data: @data, preamble: @Exporter.preamble})
 
   toVerbatim: (text) ->
     if Translator.BetterBibTeX
       value = ('' + text).replace(/([#\\%&{}])/g, '\\$1')
     else
       value = ('' + text).replace(/([\\{}])/g, '\\$1')
-    value = value.replace(/[^\x21-\x7E]/g, ((chr) -> '\\%' + ('00' + chr.charCodeAt(0).toString(16).slice(-2)))) if not Translator.unicode
+    value = value.replace(/[^\x21-\x7E]/g, ((chr) -> '\\%' + ('00' + chr.charCodeAt(0).toString(16).slice(-2)))) if not @Exporter.unicode
     return value
 
   hasCreator: (type) -> (@item.creators || []).some((creator) -> creator.creatorType == type)
 
   qualityReport: ->
-    return '' unless Translator.qualityReport
+    return '' unless Translator.preferences.qualityReport
     fields = @requiredFields[@referencetype.toLowerCase()]
     return "% I don't know how to check #{@referencetype}" unless fields
 
@@ -663,7 +660,7 @@ class Reference
       if ! @has.booktitle.value.match(/:|Proceedings|Companion| '/) || @has.booktitle.value.match(/\.|workshop|conference|symposium/)
         report.push("% ? Unsure about the formatting of the booktitle")
 
-    if @has.title && !Translator.suppressTitleCase
+    if @has.title && !Translator.preferences.suppressTitleCase
       titleCased = Zotero.BetterBibTeX.CSL.titleCase(@has.title.value) == @has.title.value
       if @has.title.value.match(/\s/)
         report.push("% ? Title looks like it was stored in title-case in Zotero") if titleCased

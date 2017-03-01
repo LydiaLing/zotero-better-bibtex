@@ -2,27 +2,6 @@ Reference = require('./reference.coffee')
 Exporter = require('./exporter.coffee')
 debug = require('./debug.coffee')
 
-Reference.installFieldMap({
-  # Zotero          BibTeX
-  place:            { name: 'location', enc: 'literal' }
-  chapter:          { name: 'chapter' }
-  edition:          { name: 'edition' }
-  title:            { name: 'title', caseConversion: true }
-  volume:           { name: 'volume' }
-  rights:           { name: 'rights' }
-  ISBN:             { name: 'isbn' }
-  ISSN:             { name: 'issn' }
-  url:              { name: 'url' }
-  DOI:              { name: 'doi' }
-  shortTitle:       { name: 'shorttitle', caseConversion: true }
-  abstractNote:     { name: 'abstract' }
-  numberOfVolumes:  { name: 'volumes' }
-  versionNumber:    { name: 'version' }
-  conferenceName:   { name: 'eventtitle' }
-  numPages:         { name: 'pagetotal' }
-  type:             { name: 'type' }
-})
-
 Reference::fieldEncoding = {
   url: 'url'
   doi: 'verbatim'
@@ -36,6 +15,17 @@ Reference::fieldEncoding = {
   verba: 'verbatim'
   verbb: 'verbatim'
   verbc: 'verbatim'
+  institution: 'literal'
+  publisher: 'literal'
+}
+Reference::caseConversion = {
+  title: true,
+  shorttitle: true,
+  origtitle: true,
+  booktitle: true,
+  maintitle: true,
+  type: true,
+  eventtitle: true,
 }
 
 Reference::requiredFields =
@@ -339,7 +329,7 @@ Translator.doExport = ->
     if item.publicationTitle
       switch item.__type__
         when 'bookSection', 'conferencePaper', 'dictionaryEntry', 'encyclopediaArticle', 'chapter'
-          ref.add({ name: 'booktitle', value: item.bookTitle || item.publicationTitle, preserveBibTeXVariables: true, caseConversion: true})
+          ref.add({ name: 'booktitle', value: item.bookTitle || item.publicationTitle, preserveBibTeXVariables: true })
 
         when 'magazineArticle', 'newspaperArticle', 'article-magazine', 'article-newspaper'
           ref.add({ name: 'journaltitle', value: item.publicationTitle, preserveBibTeXVariables: true})
@@ -362,8 +352,8 @@ Translator.doExport = ->
         else
           ref.add({ journaltitle: item.publicationTitle}) if ! ref.has.journaltitle && item.publicationTitle != item.title
 
-    ref.add({ name: 'booktitle', value: item.bookTitle || item.encyclopediaTitle || item.dictionaryTitle || item.proceedingsTitle, caseConversion: true }) if not ref.has.booktitle
-    ref.add({ name: 'booktitle', value: item.websiteTitle || item.forumTitle || item.blogTitle || item.programTitle, caseConversion: true }) if ref.referencetype in ['movie', 'video'] and not ref.has.booktitle
+    ref.add({ name: 'booktitle', value: item.bookTitle || item.encyclopediaTitle || item.dictionaryTitle || item.proceedingsTitle }) if not ref.has.booktitle
+    ref.add({ name: 'booktitle', value: item.websiteTitle || item.forumTitle || item.blogTitle || item.programTitle }) if ref.referencetype in ['movie', 'video'] and not ref.has.booktitle
 
     if item.multi?._keys?.title && (main = item.multi?.main?.title || item.language)
       languages = Object.keys(item.multi._keys.title).filter((lang) -> lang != main)
@@ -382,18 +372,18 @@ Translator.doExport = ->
 
     switch item.__type__
       when 'report', 'thesis'
-        ref.add({ name: 'institution', value: item.institution || item.publisher || item.university, enc: 'literal' })
+        ref.add({ institution: item.institution || item.publisher || item.university })
 
       when 'case', 'hearing', 'legal_case'
-        ref.add({ name: 'institution', value: item.court, enc: 'literal' })
+        ref.add({ institution: item.court })
 
       else
-        ref.add({ name: 'publisher', value: item.publisher, enc: 'literal' })
+        ref.add({ publisher: item.publisher })
 
     switch item.__type__
-      when 'letter', 'personal_communication' then ref.add({ name: 'type', value: item.letterType || 'Letter', caseConversion: true, replace: true })
+      when 'letter', 'personal_communication' then ref.add({ name: 'type', value: item.letterType || 'Letter', replace: true })
 
-      when 'email'  then ref.add({ name: 'type', value: 'E-mail', caseConversion: true, replace: true })
+      when 'email'  then ref.add({ name: 'type', value: 'E-mail', replace: true })
 
       when 'thesis'
         thesistype = item.thesisType?.toLowerCase()
@@ -401,20 +391,20 @@ Translator.doExport = ->
           ref.referencetype = thesistype
           ref.remove('type')
         else
-          ref.add({ name: 'type', value: item.thesisType, caseConversion: true, replace: true })
+          ref.add({ name: 'type', value: item.thesisType, replace: true })
 
       when 'report'
         if (item.type || '').toLowerCase().trim() == 'techreport'
           ref.referencetype = 'techreport'
         else
-          ref.add({ name: 'type', value: item.type, caseConversion: true, replace: true })
+          ref.add({ name: 'type', value: item.type, replace: true })
 
       else
-        ref.add({ name: 'type', value: item.type || item.websiteType || item.manuscriptType, caseConversion: true, replace: true })
+        ref.add({ name: 'type', value: item.type || item.websiteType || item.manuscriptType, replace: true })
 
     ref.add({ howpublished: item.presentationType || item.manuscriptType })
 
-    ref.add({ name: 'eventtitle', value: item.meetingName, caseConversion: true })
+    ref.add({ name: 'eventtitle', value: item.meetingName })
 
     ref.addCreators()
 
@@ -432,6 +422,24 @@ Translator.doExport = ->
         ref.add({ pages: "#{item.firstPage}--#{item.lastPage}" })
       when item.firstPage
         ref.add({ pages: "#{item.firstPage}" })
+
+    ref.add({ location: item.place })
+    ref.add({ chapter: item.chapter })
+    ref.add({ edition: item.edition })
+    ref.add({ name: 'title', value: item.title })
+    ref.add({ volume: item.volume })
+    ref.add({ rights: item.rights })
+    ref.add({ isbn: item.ISBN })
+    ref.add({ issn: item.ISSN })
+    ref.add({ url: item.url })
+    ref.add({ doi: item.DOI })
+    ref.add({ name: 'shorttitle', value: item.shortTitle })
+    ref.add({ abstract: item.abstractNote })
+    ref.add({ volumes: item.numberOfVolumes })
+    ref.add({ version: item.versionNumber })
+    ref.add({ eventtitle: item.conferenceName })
+    ref.add({ pagetotal: item.numPages })
+    ref.add({ type: item.type })
 
     ref.add({ name: (if ref.has.note then 'annotation' else 'note'), value: item.extra, allowDuplicates: true })
     ref.add({ name: 'keywords', value: item.tags, enc: 'tags' })
@@ -452,13 +460,13 @@ Translator.doExport = ->
       debug('volumeTitle: true, type:', item._type__, 'has:', Object.keys(ref.has))
       if item.__type__ == 'book' && ref.has.title
         debug('volumeTitle: for book, type:', item.__type__, 'has:', Object.keys(ref.has))
-        ref.add({name: 'maintitle', value: item.volumeTitle, caseConversion: true })
+        ref.add({name: 'maintitle', value: item.volumeTitle })
         [ref.has.title.bibtex, ref.has.maintitle.bibtex] = [ref.has.maintitle.bibtex, ref.has.title.bibtex]
         [ref.has.title.value, ref.has.maintitle.value] = [ref.has.maintitle.value, ref.has.title.value]
 
       if item.__type__ in ['bookSection', 'chapter'] && ref.has.booktitle
         debug('volumeTitle: for bookSection, type:', item.__type__, 'has:', Object.keys(ref.has))
-        ref.add({name: 'maintitle', value: item.volumeTitle, caseConversion: true })
+        ref.add({name: 'maintitle', value: item.volumeTitle })
         [ref.has.booktitle.bibtex, ref.has.maintitle.bibtex] = [ref.has.maintitle.bibtex, ref.has.booktitle.bibtex]
         [ref.has.booktitle.value, ref.has.maintitle.value] = [ref.has.maintitle.value, ref.has.booktitle.value]
 

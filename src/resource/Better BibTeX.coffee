@@ -279,7 +279,7 @@ class ZoteroItem
     @import()
     if Translator.preferences.rawImports
       @item.tags ?= []
-      @item.tags.push(Exporter.rawLaTag)
+      @item.tags.push(Translator.preferences.rawLaTag)
     @item.complete()
 
   typeMap:
@@ -491,9 +491,9 @@ ZoteroItem::import = () ->
 
   keys = Object.keys(@biblatexdata)
   if keys.length > 0
-    keys.sort() if Translator.preferences.testing
+    keys.sort() if Translator.preferences.tests
     biblatexdata = switch
-      when @biblatexdatajson && Translator.preferences.testing
+      when @biblatexdatajson && Translator.preferences.tests
         'bibtex{' + (for k in keys
           o = {}
           o[k] = @biblatexdata[k]

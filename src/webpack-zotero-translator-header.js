@@ -3,6 +3,21 @@
 var ConcatSource = require('webpack-sources').ConcatSource
 var ModuleFilenameHelpers = require('webpack/lib/ModuleFilenameHelpers')
 
+function unindent(str) {
+  var lines = str.split('\n')
+  if (lines[0] == '') lines.shift()
+
+  if (!lines.length) return str
+
+  var indent = lines[0].match(/^ */)
+  if (!indent) return str
+
+  indent = RegExp('^' + indent[0])
+
+  lines = lines.map(function(line) { return line.replace(indent, '') })
+  return lines.join('\n') + '\n'
+}
+
 var TranslatorHeaderPlugin = function (options) {
   if (arguments.length > 1) throw new Error('TranslatorHeaderPlugin only takes one argument (pass an options object)')
 	this.options = options || {}
@@ -20,16 +35,18 @@ TranslatorHeaderPlugin.prototype.apply = function(compiler) {
           var header = require(__dirname + '/resource/' + file + 'on')
           header.lastUpdated = new Date().toISOString().replace('T', ' ').replace(/\..*/, '')
           var preferences = require(__dirname + '/defaults/preferences/defaults.json')
-          var prefix = `${JSON.stringify(header, null, 2)}
 
+          var prefix = JSON.stringify(header, null, 2) + '\n\n'
+
+          prefix += unindent(`
             var Translator = {
               initialize: function () {},
               release: ${JSON.stringify(options.release)},
               ${header.label.replace(/[^a-z]/ig, '')}: true,
               // Also present in ZOTERO_TRANSLATOR_INFO -- maybe pick it from there
-              header: ${JSON.stringify(header, null, 2)},
-              preferences: ${JSON.stringify(preferences, null, 2)},
-              options: ${JSON.stringify(header.displayOptions || {}, null, 2)},
+              header: ${JSON.stringify(header)},
+              preferences: ${JSON.stringify(preferences)},
+              options: ${JSON.stringify(header.displayOptions || {})},
               getConfig: function() {
                 var key
                 for (key in this.header.displayOptions) {
@@ -45,6 +62,7 @@ TranslatorHeaderPlugin.prototype.apply = function(compiler) {
                 // special handling
                 this.preferences.skipWords = this.preferences.skipWords.trim().split(/\s*,\s*/)
                 this.preferences.skipFields = this.preferences.skipFields.trim().split(/\s*,\s*/)
+                this.preferences.rawLaTag = '#LaTeX'
                 if (this.preferences.csquotes) {
                   var i, csquotes = { open: '', close: '' }
                   for (i = 0; i < this.preferences.csquotes.length; i++) {
@@ -54,32 +72,33 @@ TranslatorHeaderPlugin.prototype.apply = function(compiler) {
                 }
               }
             };
-          `
 
-          var postfix = ''
+          `)
 
           if (header.translatorType & 2) { // export
-            postfix += `
+            prefix += unindent(`
               function doExport() {
                 Translator.getConfig()
                 Translator.initialize()
                 Translator.doExport()
               }
-            `
+
+            `)
           }
           if (header.translatorType & 1) { // import
-            postfix += `
+            prefix += unindent(`
               function detectImport() {
-                Translator.detectImport()
+                return Translator.detectImport()
               }
               function doImport() {
                 Translator.getConfig()
                 Translator.initialize()
                 Translator.doImport()
               }
-            `
+
+            `)
           }
-          compilation.assets[file] = new ConcatSource(prefix, compilation.assets[file], postfix)
+          compilation.assets[file] = new ConcatSource(prefix, compilation.assets[file])
         }
       }
 

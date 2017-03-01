@@ -126,42 +126,6 @@ end
 #  end
 #}
 
-task :gather do
-  found = (Dir['chrome/**/*.{coffee,pegjs}'].collect{|src|
-    tgt = src.sub(/\.[^\.]+$/, '.js')
-    tgt
-  }.reject{|f|
-    File.dirname(f) == 'chrome/content/zotero-better-bibtex/test'
-  } + Dir['chrome/**/*.xul'].reject{|f|
-    File.dirname(f) == 'chrome/content/zotero-better-bibtex/test'
-  }+ Dir['chrome/{skin,locale}/**/*.*'] + Dir['resource/translators/*.yml'].reject{|yml| File.basename(yml) == 'unicode.yml'}.collect{|tr|
-    [
-      File.join(File.dirname(tr), File.basename(tr, File.extname(tr)) + '.translator'),
-      File.join(File.dirname(tr), File.basename(tr, File.extname(tr)) + '.json')
-    ]
-  }.flatten + [
-    'chrome/content/zotero-better-bibtex/fold-to-ascii.js',
-    'chrome/content/zotero-better-bibtex/punycode.js',
-    'chrome/content/zotero-better-bibtex/lokijs.js',
-    'chrome/content/zotero-better-bibtex/csl-localedata.js',
-    'chrome/content/zotero-better-bibtex/translators.js',
-    'defaults/preferences/defaults.js',
-    'resource/citeproc.js',
-    'chrome.manifest',
-    'install.rdf',
-    'resource/reports/cacheActivity.txt',
-  ]).sort.uniq
-
-  expected = XPI.files.sort
-
-  if expected == found
-    STDERR.puts "All accounted for"
-  else
-    STDERR.puts "Intended for publishing, but no source:  #{expected - found}" if (expected - found).length > 0
-    STDERR.puts "Not published: #{found - expected}" if (found - expected).length > 0
-  end
-end
-
 #lambda {
 #  js = "Zotero.BetterBibTeX.release = #{XPI.version.to_json};"
 #  file = 'chrome/content/zotero-better-bibtex/release.js'
@@ -224,8 +188,8 @@ DOWNLOADS.each_pair{|dir, files|
   }
 }
 
-file 'chrome/content/zotero-better-bibtex/translator-metadata.js' => Dir['resource/translators/*.yml'] + ['Rakefile'] do |t|
-  translators = Dir['resource/translators/*.yml'].collect{|header| header = YAML::load_file(header) }.select{|header| header.is_a?(Hash) && header['label'] }
+file 'chrome/content/zotero-better-bibtex/translator-metadata.js' => Dir['src/resource/*.json'] + ['Rakefile'] do |t|
+  translators = t.sources.select{|f| File.extname(f) == '.json'}.collect{|header| header = JSON.parse(open(header).read) }.select{|header| header.is_a?(Hash) && header['label'] }
   open(t.name, 'w') {|f|
     names = []
     translators.each{|tr|
@@ -349,22 +313,6 @@ file 'resource/abbreviations/BioScience.json' => 'Rakefile' do |t|
   }
   saveAbbrevs(abbrevs, t.name)
   abbrevs = { default: { 'container-title' => abbrevs } }
-end
-
-rule '.json' => '.yml' do |t|
-  open(t.name, 'w'){|f|
-    header = YAML::load_file(t.source)
-
-    %w{translatorID label priority}.each{|field|
-      raise "Missing #{field} in #{t.source}" unless header[field]
-    }
-
-    #if !header['translatorType'] || ((header['translatorType'] & 1) == 0 && (header['translatorType'] & 2) == 0) # not import or export
-    #  raise "Invalid translator type #{header['translatorType']} in #{t.source}"
-    #end
-
-    f.write(JSON.pretty_generate(header))
-  }
 end
 
 def browserify(code, target)
@@ -500,17 +448,6 @@ Dir['src/resource/*.json'].each{|header|
     sh "#{NODEBIN}/webpack --env.release #{XPI.version.shellescape}"
   end
 }
-
-rule( /\.header\.js$/ => [ proc {|task_name| [task_name.sub(/\.header\.js$/, '.yml'), 'Rakefile', 'install.rdf'] } ]) do |t|
-  header = YAML.load_file(t.source)
-  open(t.name, 'w'){|f|
-    f.write("
-      Translator.header = #{header.to_json};
-      Translator.release = #{XPI.version.to_json};
-      Translator.#{header['label'].gsub(/[^a-z]/i, '')} = true;
-    ")
-  }
-end
 
 task :amo => XPI.xpi do
   amo = XPI.xpi.sub(/\.xpi$/, '-amo.xpi')
@@ -879,7 +816,7 @@ task :logs2s3 do
   end
 end
 
-file 'wiki/Configuration.md' => ['lib/PreferencesDoc.rb', 'defaults/preferences/defaults.yml', 'chrome/content/zotero-better-bibtex/xul/preferences.xul', 'chrome/locale/en-US/zotero-better-bibtex/zotero-better-bibtex.dtd'] do |t|
+file 'wiki/Configuration.md' => ['lib/PreferencesDoc.rb', 'src/defaults/preferences/defaults.json', 'chrome/content/zotero-better-bibtex/xul/preferences.xul', 'chrome/locale/en-US/zotero-better-bibtex/zotero-better-bibtex.dtd'] do |t|
   PreferencesDoc.new(t)
 end
 
