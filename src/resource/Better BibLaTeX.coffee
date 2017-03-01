@@ -17,6 +17,7 @@ Reference::fieldEncoding = {
   verbc: 'verbatim'
   institution: 'literal'
   publisher: 'literal'
+  location: 'literal'
 }
 Reference::caseConversion = {
   title: true,
