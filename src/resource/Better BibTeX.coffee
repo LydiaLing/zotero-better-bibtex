@@ -12,7 +12,7 @@ Reference::caseConversion = {
 Reference::fieldEncoding = {
   url: 'verbatim'
   doi: 'verbatim'
-  school: 'literal'
+  # school: 'literal'
   institution: 'literal'
   publisher: 'literal'
 }
@@ -146,8 +146,8 @@ Translator.doExport = ->
     switch Translator.preferences.bibtexURL
       when 'url'
         ref.add({ name: 'url', value: item.url })
-      when 'note', 'true' # that's what you get when you change pref type
-        ref.add({ name: (if ref.referencetype in ['misc', 'booklet'] then 'howpublished' else 'note'), allowDuplicates: true, value: item.url })
+      when 'note'
+        ref.add({ name: (if ref.referencetype in ['misc', 'booklet'] then 'howpublished' else 'note'), allowDuplicates: true, value: item.url, enc: 'url' })
       else
         ref.add({ name: 'howpublished', allowDuplicates: true, value: item.url }) if item.__type__ in ['webpage', 'post', 'post-weblog']
 

@@ -127,9 +127,9 @@ Scenario Outline: BibTeX Export
 
   Examples:
      | file                                                                               | references |
+     | Braces around author last name when exporting BibTeX #565                          | 5          |
      | veryshorttitle and compound words #551                                             | 4          |
      | titles are title-cased in .bib file #558                                           | 2          |
-     | Braces around author last name when exporting BibTeX #565                          | 5          |
      | Missing JabRef pattern; authEtAl #554                                              | 1          |
      | Missing JabRef pattern; authorsN+initials #553                                     | 1          |
      | custom fields should be exported as-is #441                                        | 1          |

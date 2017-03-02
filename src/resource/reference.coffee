@@ -374,8 +374,9 @@ class Reference
 
     return f.value if f.raw || raw
 
-    value = text2latex(f.value, {mode: (if f.html then 'html' else 'text'), caseConversion: (@caseConversion[f.name] || f.caseConversion) && @english})
-    value = "{#{value}}" if f.caseConversion && Translator.BetterBibTeX && !@english
+    caseConversion = @caseConversion[f.name] || f.caseConversion
+    value = text2latex(f.value, {mode: (if f.html then 'html' else 'text'), caseConversion: caseConversion && @english})
+    value = "{#{value}}" if caseConversion && Translator.BetterBibTeX && !@english
 
     value = new String("{#{value}}") if f.value instanceof String
     return value
@@ -519,6 +520,7 @@ class Reference
     removed = @has[name]
     delete @has[name]
     @fields = (field for field in @fields when field.name != name)
+    debug('field removed:', name)
     return removed
 
   normalize: (typeof (''.normalize) == 'function')
@@ -528,6 +530,7 @@ class Reference
   complete: ->
     if Translator.preferences.DOIandURL != 'both'
       if @has.doi && @has.url
+        debug('removing', Translator.preferences.DOIandURL == 'doi' ? 'url' : 'doi')
         switch Translator.preferences.DOIandURL
           when 'doi' then @remove('url')
           when 'url' then @remove('doi')
