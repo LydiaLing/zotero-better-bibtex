@@ -258,7 +258,7 @@ class Exporter
   
       @citekeys[item.itemID] = item.__citekey__
       debug("Translator: assignGroups: #{item.itemID}")
-      JabRef.assignGroups(@collections, item)
+      @JabRef_assignGroups(@collections, item)
       return item
   
     return null
@@ -275,10 +275,10 @@ class Exporter
   
   exportGroups: ->
     debug('exportGroups:', @collections)
-    return if @collections.length == 0 || !@jabrefGroups
+    return if @collections.length == 0 || !Translator.preferences.jabrefGroups
   
     switch
-      when @jabrefGroups == 3
+      when Translator.preferences.jabrefGroups == 3
         meta = 'groupsversion:3'
       when Translator.BetterBibLaTeX
         meta = 'databaseType:biblatex'
@@ -287,50 +287,48 @@ class Exporter
   
     Zotero.write("@comment{jabref-meta: #{meta};}\n")
     Zotero.write('@comment{jabref-meta: groupstree:\n')
-    Zotero.write(JabRef.exportGroup({collections: @collections}))
+    Zotero.write(@JabRef_exportGroup({collections: @collections}))
     Zotero.write(';\n')
     Zotero.write('}\n')
   
-  JabRef =
-    assignGroups: (collection, item) ->
-      return unless Translator.preferences.jabrefGroups == 4
+  JabRef_assignGroups: (collection, item) ->
+    return unless Translator.preferences.jabrefGroups == 4
+
+    collection = {items: [], collections: collection} if Array.isArray(collection)
+
+    if item.itemID in collection.items
+      item.groups ||= []
+      item.groups.push(collection.name)
+      item.groups.sort() if Translator.preferences.tests
   
-      collection = {items: [], collections: collection} if Array.isArray(collection)
+    for coll in collection.collections
+      @JabRef_assignGroups(coll, item)
   
-      if item.itemID in collection.items
-        item.groups ||= []
-        item.groups.push(collection.name)
-        item.groups.sort() if Translator.preferences.tests
+  JabRef_serialize: (list, wrap) ->
+    serialized = (elt.replace(/\\/g, '\\\\').replace(/;/g, '\\;') for elt in list)
+    serialized = (elt.match(/.{1,70}/g).join("\n") for elt in serialized) if wrap
+    return serialized.join(if wrap then ";\n" else ';')
   
-      for coll in collection.collections
-        JabRef.assignGroups(coll, item)
+  JabRef_exportGroup: (collection, level = 0) ->
+    if level
+      collected = ["#{level} ExplicitGroup:#{collection.name}", '0']
+      if Translator.preferences.jabrefGroups == 3
+        references = (@citekeys[id] for id in (collection.items || []) when @citekeys[id])
+        references.sort() if Translator.preferences.tests
+        collected = collected.concat(references)
+      # what is the meaning of the empty cell at the end, JabRef?
+      collected = collected.concat([''])
+    else
+      collected = ['0 AllEntriesGroup:']
   
-    serialize: (list, wrap) ->
-      serialized = (elt.replace(/\\/g, '\\\\').replace(/;/g, '\\;') for elt in list)
-      serialized = (elt.match(/.{1,70}/g).join("\n") for elt in serialized) if wrap
-      return serialized.join(if wrap then ";\n" else ';')
+    collected = [@JabRef_serialize(collected)]
   
-    exportGroup: (collection, level = 0) ->
-      if level
-        collected = ["#{level} ExplicitGroup:#{collection.name}", '0']
-        if Translator.preferences.jabrefGroups == 3
-          # todo: vars on Translator
-          references = (@citekeys[id] for id in (collection.items || []) when @citekeys[id])
-          references.sort() if Translator.preferences.tests
-          collected = collected.concat(references)
-        # what is the meaning of the empty cell at the end, JabRef?
-        collected = collected.concat([''])
-      else
-        collected = ['0 AllEntriesGroup:']
+    for child in collection.collections || []
+      collected = collected.concat(@JabRef_exportGroup(child, level + 1))
   
-      collected = [@serialize(collected)]
-  
-      for child in collection.collections || []
-        collected = collected.concat(@exportGroup(child, level + 1))
-  
-      if level
-        return collected
-      else
-        return @serialize(collected, true)
+    if level
+      return collected
+    else
+      return @JabRef_serialize(collected, true)
   
 module.exports = Exporter
