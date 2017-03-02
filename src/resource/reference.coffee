@@ -937,9 +937,4 @@ Reference.installPostscript = ->
   catch err
     Zotero.debug("Failed to compile postscript: #{err}\n\n#{JSON.stringify(postscript)}")
 
-Reference.installFieldMap = (fieldMap) ->
-  Reference::fieldMap = {}
-  for attr, f of fieldMap
-    Reference::fieldMap[f.name] = f if f.name
-
 module.exports = Reference

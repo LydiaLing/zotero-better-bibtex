@@ -3,36 +3,19 @@ Exporter = require('./exporter.coffee')
 debug = require('./debug.coffee')
 JSON5 = require('json5')
 
-Reference.installFieldMap({
-  # Zotero          BibTeX
-  place:            { name: 'address', import: 'location' }
-  section:          { name: 'chapter' }
-  edition:          { name: 'edition' }
-  type:             { name: 'type' }
-  series:           { name: 'series' }
-  title:            { name: 'title', caseConversion: true }
-  volume:           { name: 'volume' }
-  rights:           { name: 'copyright' }
-  ISBN:             { name: 'isbn' }
-  ISSN:             { name: 'issn' }
-  callNumber:       { name: 'lccn'}
-  shortTitle:       { name: 'shorttitle', caseConversion: true }
-  DOI:              { name: 'doi' }
-  abstractNote:     { name: 'abstract' }
-  country:          { name: 'nationality' }
-  language:         { name: 'language' }
-  assignee:         { name: 'assignee' }
-  issue:            { import: 'issue' }
-  publicationTitle: { import: 'booktitle' }
-  publisher:        { import: [ 'school', 'institution', 'publisher' ], enc: 'literal' }
-})
-
-Reference::fieldEncoding = {
-  url: 'url'
-  doi: 'verbatim'
+Reference::caseConversion = {
+  title: true,
+  shorttitle: true,
+  booktitle: true,
 }
 
-months = [ 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec' ]
+Reference::fieldEncoding = {
+  url: 'verbatim'
+  doi: 'verbatim'
+  school: 'literal'
+  institution: 'literal'
+  publisher: 'literal'
+}
 
 Reference::requiredFields =
   inproceedings: ['author','booktitle','pages','publisher','title','year']
@@ -130,27 +113,47 @@ Reference::typeMap =
 Translator.initialize = ->
   Reference.installPostscript()
 
+months = [ 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec' ]
+
 Translator.doExport = ->
-  @Exporter = new Exporter()
+  Exporter = new Exporter()
 
   Zotero.write('\n')
   while item = Exporter.nextItem()
     ref = new Reference(item)
+
+    ref.add({address: item.place})
+    ref.add({chapter: item.section})
+    ref.add({edition: item.edition})
+    ref.add({type: item.type})
+    ref.add({series: item.series})
+    ref.add({title: item.title})
+    ref.add({volume: item.volume})
+    ref.add({copyright: item.rights})
+    ref.add({isbn: item.ISBN})
+    ref.add({issn: item.ISSN})
+    ref.add({lccn: item.callNumber})
+    ref.add({shorttitle: item.shortTitle})
+    ref.add({doi: item.DOI})
+    ref.add({abstract: item.abstractNote})
+    ref.add({nationality: item.country})
+    ref.add({language: item.language})
+    ref.add({assignee: item.assignee})
 
     ref.add({ number: item.reportNumber || item.issue || item.seriesNumber || item.patentNumber })
     ref.add({ urldate: item.accessDate && item.accessDate.replace(/\s*T?\d+:\d+:\d+.*/, '') })
 
     switch Translator.preferences.bibtexURL
       when 'url'
-        ref.add({ name: 'url', value: item.url, enc: 'verbatim'})
+        ref.add({ name: 'url', value: item.url })
       when 'note', 'true' # that's what you get when you change pref type
-        ref.add({ name: (if ref.referencetype in ['misc', 'booklet'] then 'howpublished' else 'note'), allowDuplicates: true, value: item.url, enc: 'url'})
+        ref.add({ name: (if ref.referencetype in ['misc', 'booklet'] then 'howpublished' else 'note'), allowDuplicates: true, value: item.url })
       else
-        ref.add({ name: 'howpublished', allowDuplicates: true, value: item.url, enc: 'url'}) if item.__type__ in ['webpage', 'post', 'post-weblog']
+        ref.add({ name: 'howpublished', allowDuplicates: true, value: item.url }) if item.__type__ in ['webpage', 'post', 'post-weblog']
 
     switch
       when item.__type__ in ['bookSection', 'conferencePaper', 'chapter']
-        ref.add({ name: 'booktitle',  caseConversion: true, value: item.publicationTitle, preserveBibTeXVariables: true })
+        ref.add({ name: 'booktitle', value: item.publicationTitle, preserveBibTeXVariables: true })
       when ref.isBibVar(item.publicationTitle)
         ref.add({ name: 'journal', value: item.publicationTitle, preserveBibTeXVariables: true })
       else
@@ -159,7 +162,7 @@ Translator.doExport = ->
     switch item.__type__
       when 'thesis' then ref.add({ school: item.publisher })
       when 'report' then ref.add({ institution: item.institution || item.publisher })
-      else               ref.add({ name: 'publisher', value: item.publisher, enc: 'literal' })
+      else               ref.add({ name: 'publisher', value: item.publisher })
 
     if item.__type__ == 'thesis' && item.thesisType in ['mastersthesis', 'phdthesis']
       ref.referencetype = item.thesisType
@@ -331,8 +334,36 @@ ZoteroItem::$type = (value) ->
   @item.sessionType = @item.websiteType = @item.manuscriptType = @item.genre = @item.postType = @item.sessionType = @item.letterType = @item.manuscriptType = @item.mapType = @item.presentationType = @item.regulationType = @item.reportType = @item.thesisType = @item.websiteType = value
 
 ZoteroItem::$__type__ = (value) ->
-  @item.thesisType = @bibtex.__type__ if @bibtex.__type__ in [ 'phdthesis', 'mastersthesis' ]
+  @item.thesisType = value if value in [ 'phdthesis', 'mastersthesis' ]
   return true
+
+### these return the value which will be interpreted as 'true' ###
+ZoteroItem::$address      = ZoteroItem::$location     = (value) -> @item.place = value
+ZoteroItem::$institution  = ZoteroItem::$organization = (value) -> @item.backupPublisher = value
+ZoteroItem::$lastchecked  = ZoteroItem::$urldate      = (value) -> @item.accessDate = value
+ZoteroItem::$school       = ZoteroItem::$institution  = ZoteroItem::$publisher = (value) -> @item.publisher = value
+
+ZoteroItem::$chapter      = (value) -> @item.section = value
+ZoteroItem::$edition      = (value) -> @item.edition = value
+ZoteroItem::$series       = (value) -> @item.series = value
+ZoteroItem::$copyright    = (value) -> @item.rights = value
+ZoteroItem::$volume       = (value) -> @item.volume = value
+ZoteroItem::$isbn         = (value) -> @item.ISBN = value
+ZoteroItem::$issn         = (value) -> @item.ISSN = value
+ZoteroItem::$shorttitle   = (value) -> @item.shortTitle = value
+ZoteroItem::$doi          = (value) -> @item.DOI = value
+ZoteroItem::$abstract     = (value) -> @item.abstractNote = value
+ZoteroItem::$nationality  = (value) -> @item.country = value
+ZoteroItem::$language     = (value) -> @item.language = value
+ZoteroItem::$assignee     = (value) -> @item.assignee = value
+ZoteroItem::$issue        = (value) -> @item.issue = value
+ZoteroItem::$booktitle    = (value) -> @item.publicationTitle = value
+
+### ZoteroItem::$lccn = (value) -> @item.callNumber = value ###
+ZoteroItem::$lccn = (value) -> @hackyFields.push("LCCB: #{value}")
+ZoteroItem::$pmid = ZoteroItem::$pmcid = (value, field) -> @hackyFields.push("#{field.toUpperCase()}: #{value}")
+ZoteroItem::$mrnumber = (value) -> @hackyFields.push("MR: #{value}")
+ZoteroItem::$zmnumber = (value) -> @hackyFields.push("Zbl: #{value}")
 
 ZoteroItem::$lista = (value) ->
   @item.title = value if @bibtex.__type__ == 'inreference'
@@ -342,6 +373,7 @@ ZoteroItem::$title = (value) ->
     @item.bookTitle = value
   else
     @item.title = value
+  return true
 
 ZoteroItem::$subtitle = (value) ->
   @item.title = '' unless @item.title
@@ -352,16 +384,19 @@ ZoteroItem::$subtitle = (value) ->
   else
   @item.title += ' ' if @item.title.length
   @item.title += value
+  return true
 
 ZoteroItem::$journal = ZoteroItem::$journaltitle = (value) ->
   if @item.publicationTitle
     @item.journalAbbreviation = value
   else
     @item.publicationTitle = value
+  return true
 
 ZoteroItem::$fjournal = (value) ->
   @item.journalAbbreviation = @item.publicationTitle if @item.publicationTitle
   @item.publicationTitle = value
+  return true
 
 ZoteroItem::$author = ZoteroItem::$editor = ZoteroItem::$translator = (value, field) ->
   for creator in value
@@ -374,15 +409,13 @@ ZoteroItem::$author = ZoteroItem::$editor = ZoteroItem::$translator = (value, fi
     @item.creators.push(creator)
   return true
 
-ZoteroItem::$institution = ZoteroItem::$organization = (value) ->
-  @item.backupPublisher = value
-
 ZoteroItem::$number = (value) ->
   switch @item.__type__
     when 'report'                         then @item.reportNumber = value
     when 'book', 'bookSection', 'chapter' then @item.seriesNumber = value
     when 'patent'                         then @item.patentNumber = value
     else                             @item.issue = value
+  return true
 
 ZoteroItem::$month = (value) ->
   month = months.indexOf(value.toLowerCase())
@@ -399,18 +432,21 @@ ZoteroItem::$month = (value) ->
       @item.date = value + @item.date
   else
     @item.date = value
+  return true
 
 ZoteroItem::$year = (value) ->
   if @item.date
     @item.date += value if @item.date.indexOf(value) < 0
   else
     @item.date = value
+  return true
 
 ZoteroItem::$pages = (value) ->
   if @item.__type__ in ['book', 'thesis', 'manuscript']
     @item.numPages = value
   else
     @item.pages = value.replace(/--/g, '-')
+  return true
 
 ZoteroItem::$date = (value) -> @item.date = value
 
@@ -420,18 +456,18 @@ ZoteroItem::$url = ZoteroItem::$howpublished = (value) ->
   else if field == 'url' || /^(https?:\/\/|mailto:)/i.test(value)
     @item.url = value
   else
-    false
-
-ZoteroItem::$lastchecked = ZoteroItem::$urldate = (value) ->
-  @item.accessDate = value
+    return false
+  return true
 
 ZoteroItem::$keywords = ZoteroItem::$keyword = (value) ->
   keywords = value.split(/[,;]/)
   keywords = value.split(/\s+/) if keywords.length == 1
   @item.tags = (@keywordClean(kw) for kw in keywords)
+  return true
 
 ZoteroItem::$annotation = ZoteroItem::$comment = ZoteroItem::$annote = ZoteroItem::$review = ZoteroItem::$notes = (value) ->
   @item.notes.push({note: Zotero.Utilities.text2html(value)})
+  return true
 
 ZoteroItem::$file = (value) ->
   for att in value
@@ -453,18 +489,6 @@ ZoteroItem::$eprint = ZoteroItem::$eprinttype = (value, field) ->
     delete @item._eprinttype
   return true
 
-ZoteroItem::$pmid = ZoteroItem::$pmcid = (value, field) ->
-  @hackyFields.push("#{field.toUpperCase()}: #{value}")
-
-ZoteroItem::$lccn = (value) ->
-  @hackyFields.push("LCCB: #{value}")
-
-ZoteroItem::$mrnumber = (value) ->
-  @hackyFields.push("MR: #{value}")
-
-ZoteroItem::$zmnumber = (value) ->
-  @hackyFields.push("Zbl: #{value}")
-
 ZoteroItem::$note = (value) ->
   @addToExtra(value)
   return true
@@ -478,9 +502,6 @@ ZoteroItem::import = () ->
     continue if value == ''
 
     continue if @['$' + field]?(value, field)
-    if target = @fieldMap[field]
-      @item[target] ||= value
-      continue
     @addToExtraData(field, value)
 
   if @item.__type__ in ['conferencePaper', 'paper-conference'] and @item.publicationTitle and not @item.proceedingsTitle
