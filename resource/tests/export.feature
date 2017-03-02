@@ -17,6 +17,7 @@ Scenario Outline: BibLaTeX Export
 
   Examples:
      | file                                                                                           | references  |
+     | csquotes #302                                                                                  | 2           |
      | Oriental dates trip up date parser #389                                                        | 1           |
      | Non-ascii in dates is not matched by date parser #376                                          | 1           |
      | transliteration for citekey #580                                                               | 1           |
@@ -51,7 +52,6 @@ Scenario Outline: BibLaTeX Export
      | Text that legally contains the text of HTML entities such as &nbsp; triggers an overzealous decoding second-guesser #253 | 1 |
      | auth leaves punctuation in citation key #310                                                   | 1           |
      | condense in cite key format not working #308                                                   | 1           |
-     | csquotes #302                                                                                  | 2           |
      | italics in title - capitalization #541                                                         | 1           |
 #     | EDTF dates in BibLaTeX #590                                                                    | 14          |
 
@@ -62,13 +62,13 @@ Scenario Outline: BibLaTeX Export
 
   Examples:
      | file                                                                               | references  |
+     | biblatex export of phdthesis does not case-protect -type- #435                     | 1           |
      | CSL title, volume-title, container-title=BL title, booktitle, maintitle #381       | 2           |
      | Better BibLaTeX.019                                                                | 1           |
      | Extra semicolon in biblatexadata causes export failure #133                        | 2           |
      | Ignore HTML tags when generating citation key #264                                 | 1           |
      | map csl-json variables #293                                                        | 2           |
      | Export Forthcoming as Forthcoming                                                  | 1           |
-     | biblatex export of phdthesis does not case-protect -type- #435                     | 1           |
      | CSL variables only recognized when in lowercase #408                               | 1           |
      | date and year are switched #406                                                    | 4           |
      | Do not caps-protect literal lists #391                                             | 3           |

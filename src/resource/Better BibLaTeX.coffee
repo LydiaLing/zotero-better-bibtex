@@ -318,6 +318,24 @@ Translator.doExport = ->
 
     ref.add({ langid: ref.language })
 
+    ref.add({ location: item.place })
+    ref.add({ chapter: item.chapter })
+    ref.add({ edition: item.edition })
+    ref.add({ name: 'title', value: item.title })
+    ref.add({ volume: item.volume })
+    ref.add({ rights: item.rights })
+    ref.add({ isbn: item.ISBN })
+    ref.add({ issn: item.ISSN })
+    ref.add({ url: item.url })
+    ref.add({ doi: item.DOI })
+    ref.add({ shorttitle: item.shortTitle })
+    ref.add({ abstract: item.abstractNote })
+    ref.add({ volumes: item.numberOfVolumes })
+    ref.add({ version: item.versionNumber })
+    ref.add({ eventtitle: item.conferenceName })
+    ref.add({ pagetotal: item.numPages })
+    ref.add({ type: item.type })
+
     ref.add({ number: item.seriesNumber || item.number })
     ref.add({ name: (if isNaN(parseInt(item.issue)) || (( '' + parseInt(item.issue)) != ('' + item.issue))  then 'issue' else 'number'), value: item.issue })
 
@@ -382,9 +400,11 @@ Translator.doExport = ->
         ref.add({ publisher: item.publisher })
 
     switch item.__type__
-      when 'letter', 'personal_communication' then ref.add({ name: 'type', value: item.letterType || 'Letter', replace: true })
+      when 'letter', 'personal_communication'
+        ref.add({ name: 'type', value: item.letterType || 'Letter', replace: true })
 
-      when 'email'  then ref.add({ name: 'type', value: 'E-mail', replace: true })
+      when 'email'
+        ref.add({ name: 'type', value: 'E-mail', replace: true })
 
       when 'thesis'
         thesistype = item.thesisType?.toLowerCase()
@@ -423,24 +443,6 @@ Translator.doExport = ->
         ref.add({ pages: "#{item.firstPage}--#{item.lastPage}" })
       when item.firstPage
         ref.add({ pages: "#{item.firstPage}" })
-
-    ref.add({ location: item.place })
-    ref.add({ chapter: item.chapter })
-    ref.add({ edition: item.edition })
-    ref.add({ name: 'title', value: item.title })
-    ref.add({ volume: item.volume })
-    ref.add({ rights: item.rights })
-    ref.add({ isbn: item.ISBN })
-    ref.add({ issn: item.ISSN })
-    ref.add({ url: item.url })
-    ref.add({ doi: item.DOI })
-    ref.add({ name: 'shorttitle', value: item.shortTitle })
-    ref.add({ abstract: item.abstractNote })
-    ref.add({ volumes: item.numberOfVolumes })
-    ref.add({ version: item.versionNumber })
-    ref.add({ eventtitle: item.conferenceName })
-    ref.add({ pagetotal: item.numPages })
-    ref.add({ type: item.type })
 
     ref.add({ name: (if ref.has.note then 'annotation' else 'note'), value: item.extra, allowDuplicates: true })
     ref.add({ name: 'keywords', value: item.tags, enc: 'tags' })
