@@ -75,9 +75,9 @@ class MarkupParser
     last = html
 
     ### add enquote psuedo-tags. Pseudo-tags are used here because they're cleanly removable for the pre block ###
-    if Translator.csquotes
-      html = html.replace(///[#{Translator.csquotes.open.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]\s*/g, "\\$&")}]\s*///g, "\x0E")
-      html = html.replace(///\s*[#{Translator.csquotes.close.replace(/\s*[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")}]///g, "\x0F")
+    if Translator.preferences.csquotes
+      html = html.replace(///[#{Translator.preferences.csquotes.open.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]\s*/g, "\\$&")}]\s*///g, "\x0E")
+      html = html.replace(///\s*[#{Translator.preferences.csquotes.close.replace(/\s*[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")}]///g, "\x0F")
 
     length = html.length
     while html
@@ -145,7 +145,7 @@ class MarkupParser
     @parseEndTag()
 
     if options.caseConversion
-      unless Translator.suppressTitleCase
+      unless Translator.preferences.suppressTitleCase
         @titleCased = Zotero.BetterBibTeX.CSL.titleCase(@innerText(@handler.root))
         @titleCase(@handler.root)
 
