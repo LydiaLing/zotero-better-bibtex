@@ -23,8 +23,10 @@ var TranslatorHeaderPlugin = function (options) {
 	this.options = options || {}
 }
 
+
 TranslatorHeaderPlugin.prototype.apply = function(compiler) {
   var options = this.options;
+  var self = this;
 
   compiler.plugin('compilation', function (compilation) {
     compilation.plugin('optimize-chunk-assets', function (chunks, callback) {
@@ -43,11 +45,12 @@ TranslatorHeaderPlugin.prototype.apply = function(compiler) {
               initialize: function () {},
               release: ${JSON.stringify(options.release)},
               ${header.label.replace(/[^a-z]/ig, '')}: true,
-              // Also present in ZOTERO_TRANSLATOR_INFO -- maybe pick it from there
+              // header == ZOTERO_TRANSLATOR_INFO -- maybe pick it from there
               header: ${JSON.stringify(header)},
               preferences: ${JSON.stringify(preferences)},
               options: ${JSON.stringify(header.displayOptions || {})},
               getConfig: function() {
+
                 var key
                 for (key in this.header.displayOptions) {
                   this.options[key] = Zotero.getOption(key)
@@ -60,8 +63,8 @@ TranslatorHeaderPlugin.prototype.apply = function(compiler) {
                   this.preferences[key] = Zotero.getHiddenPref('better-bibtex.' + key)
                 }
                 // special handling
-                this.preferences.skipWords = this.preferences.skipWords.trim().split(/\s*,\s*/)
-                this.preferences.skipFields = this.preferences.skipFields.trim().split(/\s*,\s*/)
+                this.preferences.skipWords = this.preferences.skipWords.toLowerCase().trim().split(/\\s*,\\s*/).filter(function(s) { return s })
+                this.preferences.skipFields = this.preferences.skipFields.toLowerCase().trim().split(/\\s*,\\s*/).filter(function(s) { return s })
                 this.preferences.rawLaTag = '#LaTeX'
                 if (this.preferences.csquotes) {
                   var i, csquotes = { open: '', close: '' }
@@ -70,6 +73,7 @@ TranslatorHeaderPlugin.prototype.apply = function(compiler) {
                   }
                   this.preferences.csquotes = csquotes
                 }
+                Zotero.debug('preferences loaded: ' + JSON.stringify(this.preferences))
               }
             };
 
