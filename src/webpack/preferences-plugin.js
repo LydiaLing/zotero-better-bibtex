@@ -22,7 +22,7 @@ PreferencesPlugin.prototype.apply = function(compiler) {
         if ('isInitial' in chunk && !chunk.isInitial()) continue;
 
         for (let file of chunk.files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options))) {
-          var preferences = require(__dirname + '/defaults/preferences/defaults.json')
+          var preferences = require(__dirname + '/../defaults/preferences/defaults.json')
 
           var js = '';
           for (let preference in preferences) {

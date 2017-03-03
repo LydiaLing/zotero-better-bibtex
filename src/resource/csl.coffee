@@ -1,4 +1,5 @@
 Exporter = require('./exporter.coffee')
+debug = require('./debug.coffee')
 
 ValidCSLTypes = [
   'article'
@@ -38,7 +39,7 @@ ValidCSLTypes = [
   'thesis'
 ]
 
-class CSLExprter
+class CSLExporter
   constructor: ->
     @Exporter = new Exporter()
 
@@ -47,12 +48,12 @@ class CSLExprter
     while item = Zotero.nextItem()
       continue if item.itemType == 'note' || item.itemType == 'attachment'
   
-      cached = Zotero.BetterBibTeX.cache.fetch(item.itemID, Translator.header)
+      cached = Zotero.BetterBibTeX.cache.fetch(item.itemID, @Exporter.context)
       if cached
         csl = cached.bibtex
       else
         Zotero.BetterBibTeX.keymanager.extract(item, 'nextItem')
-        fields = Translator.extractFields(item)
+        fields = @Exporter.extractFields(item)
   
         if item.accessDate # WTH is Juris-M doing with those dates?
           item.accessDate = item.accessDate.replace(/T?[0-9]{2}:[0-9]{2}:[0-9]{2}.*/, '').trim()
@@ -74,7 +75,7 @@ class CSLExprter
   
         csl.issued = Zotero.BetterBibTeX.parseDateToArray(item.date, {cslNull: true}) if csl.issued && item.date
   
-        Translator.debug('extracted:', fields)
+        debug('extracted:', fields)
         for name, value of fields
           continue unless value.format == 'csl'
   
@@ -117,7 +118,7 @@ class CSLExprter
         delete csl.genre if csl.type == 'broadcast' && csl.genre == 'television broadcast'
   
         csl = @serialize(csl)
-        Zotero.BetterBibTeX.cache.store(item.itemID, Translator.header, citekey, csl)
+        Zotero.BetterBibTeX.cache.store(item.itemID, @Exporter.context, citekey, csl)
   
       items.push(csl)
   

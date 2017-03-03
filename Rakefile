@@ -441,7 +441,7 @@ file 'chrome/content/zotero-better-bibtex/lib/punycode.js' => 'Rakefile' do |t|
   browserify("Zotero.BetterBibTeX.punycode = require('punycode');", t.name)
 end
 
-file 'defaults/preferences/defaults.js' => [ 'src/webpack-preferences-plugin.js', 'webpack.config.js'] do |t|
+file 'defaults/preferences/defaults.js' => [ 'src/webpack/preferences-plugin.js', 'webpack.config.js'] do |t|
   sh "#{NODEBIN}/webpack --env.release #{XPI.version.shellescape}"
 end
 

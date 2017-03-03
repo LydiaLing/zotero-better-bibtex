@@ -1,8 +1,8 @@
 const path = require('path');
 const webpack = require('webpack');
 const commonsPlugin = new webpack.optimize.CommonsChunkPlugin({ name: 'common', filename: 'common.bundle.js' })
-const TranslatorHeaderPlugin = require('./src/webpack-zotero-translator-header')
-const PreferencesPlugin = require('./src/webpack-preferences-plugin')
+const TranslatorHeaderPlugin = require('./src/webpack/zotero-translator-header')
+const PreferencesPlugin = require('./src/webpack/preferences-plugin')
 
 module.exports = function(env) {
   return [

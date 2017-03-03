@@ -34,9 +34,9 @@ TranslatorHeaderPlugin.prototype.apply = function(compiler) {
         if ('isInitial' in chunk && !chunk.isInitial()) continue;
 
         for (let file of chunk.files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options))) {
-          var header = require(__dirname + '/resource/' + file + 'on')
+          var header = require(__dirname + '/../resource/' + file + 'on')
           header.lastUpdated = new Date().toISOString().replace('T', ' ').replace(/\..*/, '')
-          var preferences = require(__dirname + '/defaults/preferences/defaults.json')
+          var preferences = require(__dirname + '/../defaults/preferences/defaults.json')
 
           var prefix = JSON.stringify(header, null, 2) + '\n\n'
 
