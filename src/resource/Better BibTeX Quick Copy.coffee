@@ -27,7 +27,7 @@ Mode =
     Zotero.write(keys.join(','))
 
   pandoc: (items) ->
-    keys = (item.__citekey__ for item in items)
+    keys = ("@#{item.__citekey__}" for item in items)
     keys = keys.join('; ')
     keys = "[#{keys}]" if Translator.preferences.quickCopyPandocBrackets
     Zotero.write(keys)
