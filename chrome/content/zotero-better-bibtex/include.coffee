@@ -1,5 +1,7 @@
-if not Zotero.BetterBibTeX
-  do ->
+do ->
+  Zotero.debug('BBT: zotero pane loaded')
+  if not Zotero.BetterBibTeX
+    Zotero.debug('BBT: initializing BBT')
     loader = Components.classes['@mozilla.org/moz/jssubscript-loader;1'].getService(Components.interfaces.mozIJSSubScriptLoader)
 
     for script in ["zotero-better-bibtex.js","lib/lokijs.js","lib/translit.js","lib/vardump.js","lib/fold-to-ascii.js","lib/punycode.js","csl-loader.js","dateparser.js","preferences.js","translators.js","translator-metadata.js","db.js","csl-localedata.js","pattern-formatter.js","Zotero.BetterBibTeX.PatternParser.js","keymanager.js","journalAbbrev.js","web-endpoints.js","schomd.js","cayw.js","debug-bridge.js","cache.js","autoexport.js","serialized.js"]
@@ -24,6 +26,7 @@ if not Zotero.BetterBibTeX
         window.removeEventListener('load', load, false) #remove listener, no longer needed
         try
           Zotero.BetterBibTeX.init()
+          Zotero.debug("Better BibTeX initialization done")
         catch err
           Zotero.BetterBibTeX.disabled = "Better BibTeX initialization failed: #{err}\n\n#{err.stack}"
           Zotero.debug("Better BibTeX initialization failed: #{err}\n\n#{err.stack}")

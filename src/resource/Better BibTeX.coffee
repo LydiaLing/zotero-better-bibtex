@@ -203,16 +203,10 @@ Translator.doExport = ->
   return
 
 Translator.detectImport = ->
-  try
-    input = Zotero.read(102400)
-    Translator.log("BBT detect against #{input}")
-    bib = BibTeX.parse(input)
-    debug("better-bibtex: detect: #{bib.references.length > 0}")
-    return (bib.references.length > 0)
-  catch e
-    debug("better-bibtex: detect failed: #{e}\n#{e.stack}")
-    return false
-  return
+  input = Zotero.read(102400)
+  bib = BibTeX.parse(input)
+  debug("better-bibtex: detect: #{bib.references.length > 0}")
+  return (bib.references.length > 0)
 
 Translator.doImport = ->
   try

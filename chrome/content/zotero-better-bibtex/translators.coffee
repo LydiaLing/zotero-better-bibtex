@@ -10,15 +10,16 @@ Zotero.BetterBibTeX.Translators =
       'Zotero TestCase': '82512813-9edb-471c-aebc-eeaaf40c6cf9'
     }
     if Zotero.BetterBibTeX.Pref.get('removeStock')
+      Zotero.BetterBibTeX.debug('Adding stock translators to cleanup')
       cleanup['BibLaTeX'] = 'b6e39b57-8942-4d11-8259-342c46ce395f'
       cleanup['BibTeX'] = '9cb70025-a888-4a29-a210-93ec52da40d4'
+    else
+      Zotero.BetterBibTeX.debug('Keeping stock translators')
+
+    Zotero.BetterBibTeX.debug('Translators.install: cleanup', cleanup)
 
     for label, translatorID of cleanup
-      try
-        Zotero.BetterBibTeX.debug('Translators.install: removing', {label, translatorID})
-        @remove({label, translatorID})
-      catch err
-        Zotero.BetterBibTeX.debug('Translators.install: removing', {label, translatorID}, ':', err)
+      @remove({label, translatorID})
 
     try
       switch Zotero.Prefs.get('extensions.zotero.export.quickCopy.setting')
@@ -41,13 +42,14 @@ Zotero.BetterBibTeX.Translators =
     Zotero.Translators.init()
 
   remove: (header) ->
+    Zotero.BetterBibTeX.debug('Translators.remove', header)
     try
       fileName = Zotero.Translators.getFileNameFromLabel(header.label, header.translatorID)
       destFile = Zotero.getTranslatorsDirectory()
       destFile.append(fileName)
       destFile.remove(false) if destFile.exists()
     catch err
-      Zotero.BetterBibTeX.debug("failed to remove #{header.label}:", err)
+      Zotero.BetterBibTeX.debug("Translator.remove: failed to remove #{header.label}:", err)
 
   translate: (translator, items, displayOptions, path) ->
     return Promise.reject('null translator') unless translator

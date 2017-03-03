@@ -63,11 +63,6 @@ def loadZotero
   profile['dom.max_chrome_script_run_time'] = 6000
   profile['browser.shell.checkDefaultBrowser'] = false
 
-  if ENV['CI'] != 'true'
-    profile['extensions.zotero.debug.store'] = true
-    profile['extensions.zotero.debug.log'] = true
-    profile['extensions.zotero.translators.better-bibtex.debug'] = true
-  end
 
   profile['extensions.zotfile.automatic_renaming'] = 1
   profile['extensions.zotfile.watch_folder'] = false
@@ -90,6 +85,7 @@ def loadZotero
   profile['extensions.zotero.showIn'] = 2 # show in tab
   profile['extensions.zotero.debug.log'] = true
   profile['extensions.zotero.debug.store'] = true
+  profile['extensions.zotero.translators.better-bibtex.debug'] = true
   profile['extensions.zotero.debug.time'] = true
   profile['extensions.zotero.firstRun2'] = false
   profile['extensions.zotero.firstRunGuidance'] = false
