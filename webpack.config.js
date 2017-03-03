@@ -27,6 +27,11 @@ module.exports = function(env) {
     */
 
     {
+      resolveLoader: {
+        alias: {
+          'pegjs-loader': path.join(__dirname, './src/webpack/pegjs-loader'),
+        },
+      },
       plugins: [ new TranslatorHeaderPlugin(env) ],
       context: path.resolve(__dirname, './src/resource'),
       entry: {
@@ -44,7 +49,8 @@ module.exports = function(env) {
       },
       module: {
         rules: [
-          { test: /\.coffee$/, use: [ 'coffee-loader' ] }
+          { test: /\.coffee$/, use: [ 'coffee-loader' ] },
+          { test: /\.pegjs$/, use: [ 'pegjs-loader' ] },
         ]
       }
     },

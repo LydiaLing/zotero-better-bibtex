@@ -2,6 +2,7 @@ Reference = require('./reference.coffee')
 Exporter = require('./exporter.coffee')
 debug = require('./debug.coffee')
 JSON5 = require('json5')
+BibTeX = require('./bibtex-parser.pegjs')
 
 Reference::caseConversion = {
   title: true,
@@ -205,7 +206,7 @@ Translator.detectImport = ->
   try
     input = Zotero.read(102400)
     Translator.log("BBT detect against #{input}")
-    bib = BetterBibTeXParser.parse(input)
+    bib = BibTeX.parse(input)
     debug("better-bibtex: detect: #{bib.references.length > 0}")
     return (bib.references.length > 0)
   catch e
@@ -219,7 +220,7 @@ Translator.doImport = ->
     data = ''
     while (read = Zotero.read(0x100000)) != false
       data += read
-    bib = BetterBibTeXParser.parse(data, {mathMode: Translator.preferences.mathMode, csquotes: Translator.preferences.csquotes, raw: Translator.preferences.rawImports})
+    bib = BibTeX.parse(data, {mathMode: Translator.preferences.mathMode, csquotes: Translator.preferences.csquotes, raw: Translator.preferences.rawImports})
 
     for coll in bib.collections
       JabRef.collect(coll)

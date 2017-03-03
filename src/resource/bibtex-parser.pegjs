@@ -1,5 +1,5 @@
 {
-  var bibtex = new BetterBibTeXParserSupport(options);
+  var bibtex = new support(options);
   // Zotero.debug('parser options:' + JSON.stringify(options));
   var csquotes = bibtex.options.csquotes || '\u201C\u201D';
 

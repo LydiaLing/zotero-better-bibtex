@@ -257,3 +257,5 @@ class BetterBibTeXParserSupport
             collection.items = @unique(levels[group.level - 1].items.concat(collection.items))
 
     @collections = @collections.concat(collections)
+
+module.exports = BetterBibTeXParserSupport
