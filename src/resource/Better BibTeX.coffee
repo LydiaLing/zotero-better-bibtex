@@ -214,6 +214,7 @@ Translator.doImport = ->
     data = ''
     while (read = Zotero.read(0x100000)) != false
       data += read
+    debug('parsing bibtex with', {mathMode: Translator.preferences.mathMode, csquotes: Translator.preferences.csquotes, raw: Translator.preferences.rawImports})
     bib = BibTeX.parse(data, {mathMode: Translator.preferences.mathMode, csquotes: Translator.preferences.csquotes, raw: Translator.preferences.rawImports})
 
     for coll in bib.collections

@@ -10,7 +10,7 @@ function loader(source) {
     optimize: 'speed',
     trace: false,
     format: 'commonjs',
-    dependencies: { support: './bibtex-parser-support.coffee' }
+    // dependencies: { Mapping: './latex_unicode_mapping.coffee', Support: './bibtex-parser-support.coffee' }
   };
   /*
   if (allowedStartRules.length > 0) {

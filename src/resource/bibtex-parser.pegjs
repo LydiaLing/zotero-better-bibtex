@@ -1,6 +1,9 @@
 {
-  var bibtex = new support(options);
-  // Zotero.debug('parser options:' + JSON.stringify(options));
+  var Mapping = require('./latex_unicode_mapping.coffee')
+  var Support = require('./bibtex-parser-support.coffee')
+
+  var bibtex = new Support(options);
+  Zotero.debug('parser options:' + JSON.stringify(options));
   var csquotes = bibtex.options.csquotes || '\u201C\u201D';
 
   function say(str) {
@@ -11,7 +14,7 @@
     return say(name + ':' + input.substr(peg$currPos, 10))
   }
   function lookup(text, rule) {
-    var match = LaTeX.toUnicode[bibtex.flatten(text)];
+    var match = Mapping.toUnicode[bibtex.flatten(text)];
     if (options.verbose && rule && match) { bibtex.log('rule ' + rule + ' matched ' + JSON.stringify(text) + ' to ' + JSON.stringify(match)); }
     // if (rule && match) { bibtex.log('rule ' + rule + ' matched ' + JSON.stringify(text) + ' to ' + match.charCodeAt(0).toString(16)); }
     return match;
