@@ -64,6 +64,8 @@ class Zotero.BetterBibTeX.PatternFormatter
         when 'Season'
           @year = date.year
 
+        when 'Unknown' then # ignore
+          
         else
           throw "Unexpected parsed date #{JSON.stringify(date)}"
 
