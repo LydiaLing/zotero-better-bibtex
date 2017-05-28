@@ -2,7 +2,7 @@ inspect = require('util').inspect
 
 module.exports = (msg...) ->
   return unless Translator.preferences.debug
-  
+
   str = []
   for m in msg
     switch

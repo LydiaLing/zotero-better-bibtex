@@ -5,7 +5,9 @@
   "description": "Better BibTeX support for Zotero",
   "preferglobal": true,
   "scripts": {
-    "test": "exit 0"
+    "test": "exit 0",
+    "build": "webpack",
+    "lint": "find src -name '*.coffee' -print0 | xargs -0 coffeelint"
   },
   "repository": {
     "type": "git",

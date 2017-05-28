@@ -3,6 +3,7 @@ const webpack = require('webpack');
 const commonsPlugin = new webpack.optimize.CommonsChunkPlugin({ name: 'common', filename: 'common.bundle.js' })
 const TranslatorHeaderPlugin = require('./src/webpack/zotero-translator-header')
 const PreferencesPlugin = require('./src/webpack/preferences-plugin')
+const Package = require('./package.json')
 
 module.exports = function(env) {
   return [
@@ -32,7 +33,7 @@ module.exports = function(env) {
           'pegjs-loader': path.join(__dirname, './src/webpack/pegjs-loader'),
         },
       },
-      plugins: [ new TranslatorHeaderPlugin(env) ],
+      plugins: [ new TranslatorHeaderPlugin(Object.assign({}, env, { release: Package.version })) ],
       context: path.resolve(__dirname, './src/resource'),
       entry: {
         'Better BibLaTeX': './Better BibLaTeX.coffee',
