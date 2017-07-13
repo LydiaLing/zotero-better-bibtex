@@ -20,26 +20,27 @@
     "url": "https://github.com/retorquere/zotero-better-bibtex/issues"
   },
   "dependencies": {
-    "browserify": "^14.4.0",
-    "coffee-script": "^1.12.6",
-    "coffeelint": "^1.16.0",
     "edtf": "^2.1.0",
     "fold-to-ascii": "~2.0.2",
-    "grasp": "^0.5.0",
     "he": "^1.1.1",
-    "js-beautify": "^1.6.14",
     "js-yaml": "^3.8.4",
     "json5": "^0.5.1",
-    "lokijs": "^1.4.3",
+    "lokijs": "^1.5.0",
     "marked": "^0.3.6",
-    "npm-check-updates": "^2.11.2",
-    "pegjs": "^0.10.0",
     "transliteration": "^1.6.2",
     "xregexp": "^3.2.0"
   },
   "devDependencies": {
+    "coffee-script": "^1.12.6",
+    "coffeelint": "^1.16.0",
+    "grasp": "^0.6.0",
+    "js-beautify": "^1.6.14",
+    "npm-check-updates": "^2.11.2",
     "coffee-loader": "^0.7.3",
     "webpack": "^2.6.1",
-    "webpack-sources": "^0.2.3"
+    "webpack-sources": "^0.2.3",
+    "marked": "^0.3.6",
+    "npm-check-updates": "^2.12.1",
+    "pegjs": "^0.10.0"
   }
 }

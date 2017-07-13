@@ -525,7 +525,7 @@ class Reference
 
   normalize: (typeof (''.normalize) == 'function')
 
-  postscript: ->
+  postscript: (reference, item) ->
 
   complete: ->
     if Translator.preferences.DOIandURL != 'both'
@@ -588,9 +588,6 @@ class Reference
             debug('fields.push', { name, value: value.value, raw: value.raw })
             fields.push({ name, value: value.value, raw: value.raw })
 
-    for name in Translator.preferences.skipFields
-      @remove(name)
-
     for field in fields
       name = field.name.split('.')
       if name.length > 1
@@ -606,10 +603,10 @@ class Reference
 
     @add({name: 'type', value: @referencetype}) if @fields.length == 0
 
-    try
-      @postscript()
-    catch err
-      debug('postscript error:', err.message || err.name)
+    @postscript(@, @item)
+
+    for name in Translator.skipFields
+      @remove(name)
 
     # sort fields for stable tests
     @fields.sort((a, b) -> ("#{a.name} = #{a.value}").localeCompare(("#{b.name} = #{b.value}"))) if Translator.preferences.tests

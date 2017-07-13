@@ -1,4 +1,6 @@
 <!--
+REGARDING ZOTERO 5: I am aware that BBT does not work in Zotero 5. Please see issue #555 -- do not open new issues about Z5 compatibility, but add your comments on #555. Thank you.
+
 If your bug report/feature request/question concerns problems with exporting references, please specify whether you're exporting BibTeX or BibLaTeX.
 
 If your issue is about exports of any kind, please right-click the references where you experience the export problem, select "Send Better BibTeX Error", and post the resulting report ID (shown in red after you submit) here.
