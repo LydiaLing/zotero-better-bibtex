@@ -1,7 +1,10 @@
 debug = require('./lib/debug.coffee')
 collections = require('./lib/collections.coffee')
 
-scrub = (item) ->
+scrub4import = (item) ->
+  return item
+
+scrub4export = (item) ->
   delete item.libraryID
   delete item.key
   delete item.uniqueFields
@@ -65,7 +68,7 @@ BetterBibTeX.doImport = ->
     delete source.multi.main if source.multi
 
     item = new Zotero.Item()
-    Object.assign(item, source)
+    Object.assign(item, scrub4import(source))
     for att in item.attachments || []
       delete att.path if att.url
     item.complete()
@@ -85,7 +88,7 @@ BetterBibTeX.doExport = ->
   }
 
   while item = Zotero.nextItem()
-    data.items.push(scrub(item))
+    data.items.push(scrub4export(item))
 
   Zotero.write(JSON.stringify(data, null, '  '))
   return
