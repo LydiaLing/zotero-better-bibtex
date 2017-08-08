@@ -7,6 +7,10 @@ Zotero.BetterBibTeX.ErrorReport = require('./error-report/error-report.coffee')
 
 Prefs = require('./preferences.coffee') # needs to be here early, initializes the prefs observer
 
+# TODO: remove after beta
+Zotero.Prefs.get('debug.store', true)
+Zotero.Debug.setStore(true)
+
 Translators = require('./translators.coffee')
 KeyManager = require('./keymanager.coffee')
 JournalAbbrev = require('./journal-abbrev.coffee')
@@ -51,7 +55,10 @@ Zotero.BetterBibTeX.itemToExportFormat = Zotero.Utilities.Internal.itemToExportF
 Zotero.Utilities.Internal.itemToExportFormat = ((original) ->
   return (zoteroItem, legacy, skipChildItems) ->
     try
-      return Serializer.fetch(zoteroItem.id, legacy, skipChildItems) || Serializer.store(zoteroItem.id, original.apply(@, arguments), legacy, skipChildItems)
+      serialized = Serializer.fetch(zoteroItem.id, legacy, skipChildItems) || Serializer.store(zoteroItem.id, original.apply(@, arguments), legacy, skipChildItems)
+      Zotero.debug('itemToExportFormat: native:' + Zotero.Utilities.varDump(original.apply(@, arguments)))
+      Zotero.debug('itemToExportFormat: patched:' + Zotero.Utilities.varDump(serialized))
+      return serialized
     catch err # fallback for safety for non-BBT
       debug('Zotero.Item::save', err)
       return original.apply(@, arguments)

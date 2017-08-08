@@ -57,7 +57,7 @@ Loki.Collection::update = ((original) ->
     return original.apply(@, arguments)
 )(Loki.Collection::update)
 
-class FileStore
+class _FileStore
   backups: 3
 
   versioned: (name, id) ->
@@ -118,6 +118,50 @@ class FileStore
       return callback(error)
 
     return callback(data || '{}')
+
+class FileStore
+  mode: 'reference'
+
+  _load: (name) ->
+    file = createFile(name)
+    throw {name: 'NoSuchFile', message: "#{file.path} not found", toString: -> "#{@name}: #{@message}"} unless file.exists()
+    return Zotero.File.getContents(file)
+
+  _save: (file, obj) ->
+    debug.log("saving #{file.path}")
+    Zotero.File.putContents(file, JSON.stringify(obj, null, 2))
+    return
+
+  exportDatabase: (dbname, dbref, callback) ->
+    header = {}
+    for k, v of dbref
+      if k == 'collections'
+        for coll in v
+          collfile = "#{dbref.filename}.#{coll.name}.json"
+          f = createFile(collfile)
+          if coll.dirty || !f.exists()
+            @_save(f, coll)
+        header[k] = v.map((coll) -> coll.name)
+      else
+        header[k] = v
+
+    Zotero.File.putContents(createFile("#{dbref.filename}.json"), JSON.stringify(header, null, 2))
+    callback(null)
+    return true
+
+  loadDatabase: (dbname, callback) ->
+    try
+      db = JSON.parse(@_load("#{dbname}.json"))
+    catch err
+      throw err unless err.name == 'NoSuchFile'
+      db = new Loki(dbname)
+
+    for coll, i in db.collections
+      continue unless typeof coll == 'string'
+      db.collections[i] = JSON.parse(@_load("#{dbname}.#{coll}.json"))
+
+    callback(db)
+    return
 
 module.exports = (name, options = {}) ->
   if options.autosave
