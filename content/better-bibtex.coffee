@@ -19,6 +19,7 @@ parseDate = require('./dateparser.coffee')
 citeproc = require('./citeproc.coffee')
 titleCase = require('./title-case.coffee')
 events = require('./events.coffee')
+DB = require('./db.coffee')
 
 ###
   MONKEY PATCHES
@@ -90,7 +91,7 @@ do Zotero.Promise.coroutine(->
 
   yield benchmark({
     msg: 'Zotero initialization'
-    async: Zotero.initializationPromise
+    async: DB.loadDatabaseAsync()
     flash: true
   })
 

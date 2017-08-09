@@ -1,20 +1,18 @@
 Loki = require('./loki.coffee')
 
-# TODO: re-enable when I figure out where I want to save to
-DB = Loki('db.json', { autosave: true })
+DB = Loki('_better_bibtex', { autosave: true })
 
-DB.loadDatabase()
-
-# old junk
+### TODO: old junk -- only for loading from files
 DB.removeCollection('metadata') if DB.getCollection('metadata')
 DB.removeCollection('keys') if DB.getCollection('keys')
+###
 
 ###
   TODO: schedule save on close
 DB.close()
 ###
 
-### move to autoexports when I get to it
+### TODO: move to autoexports when I get to it
 autoexports = DB.schemaCollection('autoexport', {
   indices: [ 'type', 'id', 'status', 'path', 'exportNotes', 'translatorID', 'useJournalAbbreviation'],
   unique: [ 'path' ],

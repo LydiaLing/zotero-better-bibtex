@@ -163,14 +163,92 @@ class FileStore
     callback(db)
     return
 
+class DBStore
+  mode: 'reference'
+  loaded: {}
+  validName: /^_better_bibtex[_a-zA-Z0-9]*$/
+
+  ensureDB: Zotero.Promise.coroutine((dbname) ->
+    yield Zotero.DB.queryAsync("CREATE TABLE IF NOT EXISTS #{dbname} (name TEXT PRIMARY KEY NOT NULL, data TEXT PRIMARY KEY NOT NULL)")
+  )
+
+  exportDatabase: (dbname, dbref, callback) ->
+    throw new Error("Invalid database name '#{dbname}'") unless dbname.match(@validName)
+    throw new Error("Database #{dbname} not loaded") unless @loaded[dbname]
+
+    do Zotero.Promise.coroutine(->
+      try
+        yield Zotero.DB.executeTransaction(=>
+          yield @ensureDB(dbname)
+
+          header = {}
+          for k, v of dbref
+            if k == 'collections'
+              for coll in v
+                name = "#{dbname}.#{coll.name}"
+                if coll.dirty || !(yield Zotero.DB.valueQueryAsync("SELECT 1 FROM #{dbname} WHERE name = ?", [name]))
+                  Zotero.DB.queryAsync("REPLACE INTO #{dbname} (name, data) VALUES (?, ?)", [name, JSON.stringify(coll)])
+              header[k] = v.map((coll) -> coll.name)
+            else
+              header[k] = v
+
+          Zotero.DB.queryAsync("REPLACE INTO #{dbname} (name, data) VALUES (?, ?)", [dbname, JSON.stringify(header)])
+        )
+        callback(null)
+      catch err
+        callback(err)
+    )
+
+    return
+
+  # this assumes Zotero.initializationPromise has resolved, will throw an error if not
+  loadDatabase: (dbname, callback) ->
+    throw new Error("Invalid database name '#{dbname}'") unless dbname.match(@validName)
+
+    do Zotero.Promise.coroutine(=>
+      try
+        yield Zotero.DB.executeTransaction(->
+          yield @ensureDB(dbname)
+
+          data = yield Zotero.DB.queryAsync("SELECT (name, data) FROM #{dbname}")
+
+          if data.length == 0
+            db = new Loki(dbname)
+          else
+            data = data.reduce(((row, collections) -> collections[row.name] = JSON.parse(row.data); return collections), {})
+
+            db = data[dbname]
+            if db.collections
+              for coll in db.collections
+                db.collections[coll] = data[coll]
+
+          callback(db)
+          @loaded[dbname] = true
+        )
+      catch err
+        callback(err)
+    )
+
+    return
+
 module.exports = (name, options = {}) ->
   if options.autosave
     # options.adapter = new Loki.LokiPartitioningAdapter(new FileStore())
-    options.adapter = new FileStore()
+    # options.adapter = new FileStore()
+    options.adapter = new DBStore()
     options.autosaveInterval ||= 5000
     delete options.persistenceMethod
   else
     delete options.adapter
     options.persistenceMethod = null
   options.env = 'BROWSER'
-  return new Loki(name, options)
+
+  db  = new Loki(name, options)
+
+  if options.autosave
+    db.loadDatabaseAsync = Zotero.Promise.coroutine(->
+      yield Zotero.initializationPromise
+      @loadDatabase()
+    )
+
+  return db
