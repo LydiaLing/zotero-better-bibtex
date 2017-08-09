@@ -39,6 +39,7 @@ dateparser(path.join(__dirname, 'citeproc-js/locale'), path.join(__dirname, 'gen
 rdf();
 preferences();
 assets();
+console.log('write version'); fs.writeFileSync(path.join(__dirname, 'gen/version.js'), `module.exports = ${JSON.stringify(version)};\n`, 'utf8')
 
 console.log("let's roll");
 
@@ -85,7 +86,14 @@ module.exports = [
 
   // translators
   _.merge({}, common, {
-    plugins: [ new TranslatorHeaderPlugin() ],
+    plugins: [
+      function() {
+        this.plugin("done", function(stats) {
+          require("fs").writeFileSync(path.join(__dirname, "stats.json"), JSON.stringify(stats.toJson()));
+        });
+      },
+      new TranslatorHeaderPlugin()
+    ],
     context: path.resolve(__dirname, './resource'),
     entry: translators().reduce((entries, f) => {
       var translator = f.replace(/\.json$/, '');
